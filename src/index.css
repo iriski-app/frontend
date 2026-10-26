@@ -1,8 +1,7 @@
 :root {
-  font-family: Arial, sans-serif;
+  font-family: 'Unbounded', sans-serif;
+  color: #241b30;
   font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
 }
 
 * {
@@ -16,6 +15,7 @@ body {
 
 button,
 input,
+textarea,
 select {
   font: inherit;
 }

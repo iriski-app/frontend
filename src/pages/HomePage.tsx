@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react'
+
 import Header from '../components/layout/Header'
 import DealForm from '../components/deal/DealForm'
 import InstrumentInfo from '../components/instrument/InstrumentInfo'
 import RiskResult from '../components/risk/RiskResult'
+
 import { getInstrumentDetails } from '../api/instruments'
 import { calculateRisk } from '../api/riskCalculations'
 import { ApiError } from '../api/client'
+
 import type { Deal } from '../types/deal'
 import type { InstrumentDetails } from '../types/instrument'
 import type { RiskCalculationResponse } from '../types/risk'
@@ -32,6 +35,8 @@ function HomePage() {
     status: 'idle',
   })
 
+  const [canSubmitDeal, setCanSubmitDeal] = useState(false)
+
   const instrumentRequestId = useRef(0)
   const calculationRequestId = useRef(0)
 
@@ -42,6 +47,7 @@ function HomePage() {
 
   function handleIsinChange() {
     instrumentRequestId.current += 1
+
     setInstrumentState({ status: 'idle' })
     resetCalculation()
   }
@@ -54,6 +60,7 @@ function HomePage() {
     const currentRequestId = ++instrumentRequestId.current
 
     setInstrumentState({ status: 'loading' })
+    resetCalculation()
 
     try {
       const details = await getInstrumentDetails(isin)
@@ -65,7 +72,10 @@ function HomePage() {
       if (details === null) {
         setInstrumentState({ status: 'not-found' })
       } else {
-        setInstrumentState({ status: 'success', details })
+        setInstrumentState({
+          status: 'success',
+          details,
+        })
       }
     } catch {
       if (currentRequestId !== instrumentRequestId.current) {
@@ -92,7 +102,10 @@ function HomePage() {
         return
       }
 
-      setCalculationState({ status: 'success', result })
+      setCalculationState({
+        status: 'success',
+        result,
+      })
     } catch (error) {
       if (currentRequestId !== calculationRequestId.current) {
         return
@@ -116,41 +129,81 @@ function HomePage() {
     <>
       <Header />
 
-      <main>
-        <h1>Расчёт финансовых рисков</h1>
+      <main
+        className={`home-page ${calculationState.status === 'success' ? 'home-page--result' : ''}`}
+      >
+        <h1 className="home-page__title">Расчёт финансовых рисков</h1>
 
-        <DealForm
-          onCalculate={handleCalculate}
-          onIsinChange={handleIsinChange}
-          onIsinBlur={handleIsinBlur}
-          onDealChange={handleDealChange}
-          isInstrumentFound={instrumentState.status === 'success'}
-          isCalculating={calculationState.status === 'loading'}
-        />
+        <div className="home-page__layout">
+          <section
+            className="home-page__panel home-page__panel--deal"
+            aria-label="Параметры сделки и информация об облигации"
+          >
+            <DealForm
+              onCalculate={handleCalculate}
+              onIsinChange={handleIsinChange}
+              onIsinBlur={handleIsinBlur}
+              onDealChange={handleDealChange}
+              onValidityChange={setCanSubmitDeal}
+              isInstrumentFound={instrumentState.status === 'success'}
+              isCalculating={calculationState.status === 'loading'}
+            />
 
-        {instrumentState.status === 'loading' && <p role="status">Загрузка данных облигации...</p>}
+            {instrumentState.status === 'loading' && (
+              <p role="status">Загрузка данных облигации...</p>
+            )}
 
-        {instrumentState.status === 'not-found' && (
-          <p role="status">Облигация с таким ISIN не найдена.</p>
-        )}
+            {instrumentState.status === 'not-found' && (
+              <p role="status">Облигация с таким ISIN не найдена.</p>
+            )}
 
-        {instrumentState.status === 'error' && (
-          <p role="alert">Не удалось загрузить данные облигации. Попробуйте ещё раз.</p>
-        )}
+            {instrumentState.status === 'error' && (
+              <p role="alert">Не удалось загрузить данные облигации. Попробуйте ещё раз.</p>
+            )}
 
-        {instrumentState.status === 'success' && (
-          <InstrumentInfo details={instrumentState.details} />
-        )}
+            {instrumentState.status === 'success' && (
+              <InstrumentInfo details={instrumentState.details} />
+            )}
 
-        {calculationState.status === 'idle' && (
-          <p>Заполните параметры сделки и выполните расчёт.</p>
-        )}
+            <div className="home-page__deal-actions">
+              <button
+                className="home-page__calculate-button"
+                type="submit"
+                form="deal-form"
+                disabled={!canSubmitDeal}
+              >
+                {calculationState.status === 'loading' ? 'Расчёт...' : 'Рассчитать риск'}
+              </button>
+            </div>
+          </section>
 
-        {calculationState.status === 'loading' && <p role="status">Выполняется расчёт риска...</p>}
+          <section
+            className="home-page__panel home-page__panel--risk"
+            aria-label="Область расчёта риска"
+          >
+            {calculationState.status === 'idle' && (
+              <>
+                <h2>Результаты расчёта</h2>
+                <p>Заполните параметры сделки и выполните расчёт.</p>
+              </>
+            )}
 
-        {calculationState.status === 'error' && <p role="alert">{calculationState.message}</p>}
+            {calculationState.status === 'loading' && (
+              <p role="status">Выполняется расчёт риска...</p>
+            )}
 
-        {calculationState.status === 'success' && <RiskResult result={calculationState.result} />}
+            {calculationState.status === 'error' && (
+              <>
+                <h2>Ошибка расчёта</h2>
+                <p role="alert">{calculationState.message}</p>
+              </>
+            )}
+
+            {calculationState.status === 'success' && (
+              <RiskResult result={calculationState.result} />
+            )}
+          </section>
+        </div>
       </main>
     </>
   )

@@ -1,0 +1,71 @@
+.instrument-info {
+  margin-top: 28px;
+  min-width: 0;
+}
+
+.instrument-info h2 {
+  margin: 0 0 20px;
+}
+
+.instrument-info__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+
+  margin: 0;
+  padding: 0;
+}
+
+.instrument-info__item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+
+  min-width: 0;
+  min-height: 85px;
+  padding: 16px;
+
+  border-radius: 12px;
+  background-color: #ffffff;
+  text-align: left;
+}
+
+.instrument-info__item dt {
+  margin: 0;
+  color: #675777;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.instrument-info__item dd {
+  margin: 0;
+  color: #241b30;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.instrument-info__notice {
+  margin: 16px 0 0;
+  color: #675777;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .instrument-info__list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .instrument-info__item {
+    min-height: 70px;
+    padding: 14px;
+  }
+
+  .instrument-info__item dd {
+    font-size: 12px;
+  }
+}
