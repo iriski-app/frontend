@@ -4,8 +4,11 @@ import DealForm from '../components/deal/DealForm'
 import InstrumentInfo from '../components/instrument/InstrumentInfo'
 import RiskResult from '../components/risk/RiskResult'
 import { getInstrumentDetails } from '../api/instruments'
+import { calculateRisk } from '../api/riskCalculations'
+import { ApiError } from '../api/client'
 import type { Deal } from '../types/deal'
 import type { InstrumentDetails } from '../types/instrument'
+import type { RiskCalculationResponse } from '../types/risk'
 
 type InstrumentState =
   | { status: 'idle' }
@@ -14,30 +17,48 @@ type InstrumentState =
   | { status: 'not-found' }
   | { status: 'error' }
 
-function HomePage() {
-  const [submittedDeal, setSubmittedDeal] = useState<Deal | null>(null)
+type CalculationState =
+  | { status: 'idle' }
+  | { status: 'loading' }
+  | { status: 'success'; result: RiskCalculationResponse }
+  | { status: 'error'; message: string }
 
+function HomePage() {
   const [instrumentState, setInstrumentState] = useState<InstrumentState>({
     status: 'idle',
   })
 
-  const requestId = useRef(0)
+  const [calculationState, setCalculationState] = useState<CalculationState>({
+    status: 'idle',
+  })
+
+  const instrumentRequestId = useRef(0)
+  const calculationRequestId = useRef(0)
+
+  function resetCalculation() {
+    calculationRequestId.current += 1
+    setCalculationState({ status: 'idle' })
+  }
 
   function handleIsinChange() {
-    requestId.current += 1
+    instrumentRequestId.current += 1
     setInstrumentState({ status: 'idle' })
-    setSubmittedDeal(null)
+    resetCalculation()
+  }
+
+  function handleDealChange() {
+    resetCalculation()
   }
 
   async function handleIsinBlur(isin: string) {
-    const currentRequestId = ++requestId.current
+    const currentRequestId = ++instrumentRequestId.current
 
     setInstrumentState({ status: 'loading' })
 
     try {
       const details = await getInstrumentDetails(isin)
 
-      if (currentRequestId !== requestId.current) {
+      if (currentRequestId !== instrumentRequestId.current) {
         return
       }
 
@@ -47,7 +68,7 @@ function HomePage() {
         setInstrumentState({ status: 'success', details })
       }
     } catch {
-      if (currentRequestId !== requestId.current) {
+      if (currentRequestId !== instrumentRequestId.current) {
         return
       }
 
@@ -55,11 +76,40 @@ function HomePage() {
     }
   }
 
-  function handleCalculate(deal: Deal) {
-    setSubmittedDeal(deal)
-  }
-  function handleDealChange() {
-    setSubmittedDeal(null)
+  async function handleCalculate(deal: Deal) {
+    if (instrumentState.status !== 'success' || calculationState.status === 'loading') {
+      return
+    }
+
+    const currentRequestId = ++calculationRequestId.current
+
+    setCalculationState({ status: 'loading' })
+
+    try {
+      const result = await calculateRisk(deal)
+
+      if (currentRequestId !== calculationRequestId.current) {
+        return
+      }
+
+      setCalculationState({ status: 'success', result })
+    } catch (error) {
+      if (currentRequestId !== calculationRequestId.current) {
+        return
+      }
+
+      if (error instanceof ApiError && error.code === 'INSUFFICIENT_MARKET_DATA') {
+        setCalculationState({
+          status: 'error',
+          message: 'Недостаточно рыночных данных для расчёта риска.',
+        })
+      } else {
+        setCalculationState({
+          status: 'error',
+          message: 'Не удалось рассчитать риск. Попробуйте ещё раз.',
+        })
+      }
+    }
   }
 
   return (
@@ -75,6 +125,7 @@ function HomePage() {
           onIsinBlur={handleIsinBlur}
           onDealChange={handleDealChange}
           isInstrumentFound={instrumentState.status === 'success'}
+          isCalculating={calculationState.status === 'loading'}
         />
 
         {instrumentState.status === 'loading' && <p role="status">Загрузка данных облигации...</p>}
@@ -91,15 +142,15 @@ function HomePage() {
           <InstrumentInfo details={instrumentState.details} />
         )}
 
-        {submittedDeal && (
-          <p>
-            Параметры сделки приняты: {submittedDeal.isin}, количество: {submittedDeal.quantity},
-            направление: {submittedDeal.side === 'buy' ? 'Покупка' : 'Продажа'}. Расчёт риска пока
-            не подключён.
-          </p>
+        {calculationState.status === 'idle' && (
+          <p>Заполните параметры сделки и выполните расчёт.</p>
         )}
 
-        <RiskResult />
+        {calculationState.status === 'loading' && <p role="status">Выполняется расчёт риска...</p>}
+
+        {calculationState.status === 'error' && <p role="alert">{calculationState.message}</p>}
+
+        {calculationState.status === 'success' && <RiskResult result={calculationState.result} />}
       </main>
     </>
   )

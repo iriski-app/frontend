@@ -11,6 +11,7 @@ interface DealFormProps {
   onIsinBlur: (isin: string) => void
   onDealChange: () => void
   isInstrumentFound: boolean
+  isCalculating: boolean
 }
 
 interface TouchedFields {
@@ -24,6 +25,7 @@ function DealForm({
   onIsinBlur,
   onDealChange,
   isInstrumentFound,
+  isCalculating,
 }: DealFormProps) {
   const [isin, setIsin] = useState('')
   const [side, setSide] = useState<DealSide>('buy')
@@ -40,7 +42,7 @@ function DealForm({
   const validIsin = isValidIsin(normalizedIsin)
   const validQuantity = isValidQuantity(quantity)
 
-  const canCalculate = validIsin && validQuantity && isInstrumentFound
+  const canCalculate = validIsin && validQuantity && isInstrumentFound && !isCalculating
 
   const isinError = !touched.isin
     ? undefined
@@ -141,7 +143,7 @@ function DealForm({
       )}
       <section>
         <button type="submit" disabled={!canCalculate}>
-          Рассчитать риск
+          {isCalculating ? 'Расчёт...' : 'Рассчитать риск'}
         </button>
       </section>
     </form>
