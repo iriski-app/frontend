@@ -29,11 +29,13 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
   })
 
   if (!response.ok) {
-    let errorData: ApiErrorResponse = {}
+    let errorData: ApiErrorResponse
 
     try {
       errorData = (await response.json()) as ApiErrorResponse
-    } catch {}
+    } catch {
+      errorData = {}
+    }
 
     throw new ApiError(
       response.status,
