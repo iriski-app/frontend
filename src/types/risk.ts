@@ -1,13 +1,25 @@
-import type { Deal } from './deal'
+import type { Deal, DealSide } from './deal'
 
-export type RiskCalculationRequest = Deal
+export interface RiskCalculationRequest {
+  positions: Deal[]
+}
+
+export interface CalculationPositionResponse {
+  id: string
+  instrument_id: string
+  side: DealSide
+  quantity: number
+  market_value: number | null
+  duration_mod: number | null
+  dv01: number | null
+  source: string
+  market_date: string | null
+}
 
 export interface RiskCalculationResponse {
-  calculationId: string
-  dv01: number | null
-  dv01Rub: number | null
-  dv01Low: number | null
-  dv01High: number | null
-  currency: string
-  dataSource: string | null
+  id: string
+  status: string
+  as_of_date: string
+  total_dv01_rub: number | null
+  positions: CalculationPositionResponse[]
 }

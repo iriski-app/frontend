@@ -6,7 +6,6 @@ export class ApiError extends Error {
 
   constructor(status: number, code: string, message: string) {
     super(message)
-
     this.name = 'ApiError'
     this.status = status
     this.code = code
@@ -21,6 +20,7 @@ interface ApiErrorResponse {
 export async function apiRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...options,
+    credentials: 'include',
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',

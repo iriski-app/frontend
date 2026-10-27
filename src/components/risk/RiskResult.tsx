@@ -4,7 +4,7 @@ interface RiskResultProps {
   result: RiskCalculationResponse
 }
 
-function formatMetric(value: number | null): string {
+function formatDV01(value: number | null): string {
   if (value === null) {
     return 'Нет данных'
   }
@@ -15,24 +15,11 @@ function formatMetric(value: number | null): string {
 }
 
 function RiskResult({ result }: RiskResultProps) {
-  const isMock = result.dataSource === 'mock'
-
-  const fields = [
-    { label: 'DV01', value: formatMetric(result.dv01) },
-    {
-      label: 'DV01 в рублях',
-      value: result.dv01Rub === null ? 'Нет данных' : `${formatMetric(result.dv01Rub)} ₽`,
-    },
-    { label: 'Нижняя граница DV01', value: formatMetric(result.dv01Low) },
-    { label: 'Верхняя граница DV01', value: formatMetric(result.dv01High) },
-    { label: 'Валюта', value: result.currency || 'Нет данных' },
-    { label: 'Источник данных', value: result.dataSource ?? 'Не указан' },
-    { label: 'ID расчёта', value: result.calculationId },
-  ]
+  const isMock = result.positions.some((position) => position.source === 'mock')
 
   return (
     <section className="risk-result" aria-label="Результат расчёта риска">
-      <h2>Результаты расчёта</h2>
+      <h2>Результат расчёта</h2>
 
       {isMock && (
         <p className="risk-result__notice" role="status">
@@ -40,14 +27,24 @@ function RiskResult({ result }: RiskResultProps) {
         </p>
       )}
 
-      <dl className="risk-result__list">
-        {fields.map((field) => (
-          <div className="risk-result__item" key={field.label}>
-            <dt>{field.label}</dt>
-            <dd>{field.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <p className="risk-result__description">
+        Чувствительность стоимости сделки к изменению ставки на 1 базисный пункт.
+      </p>
+
+      <div className="risk-result__metric">
+        <span className="risk-result__metric-label">DV01 сделки</span>
+
+        <strong className="risk-result__metric-value">
+          {formatDV01(result.total_dv01_rub)}
+          {result.total_dv01_rub !== null && <span className="risk-result__currency"> ₽</span>}
+        </strong>
+      </div>
+
+      <section className="risk-result__explanation" aria-labelledby="risk-explanation-title">
+        <h3 id="risk-explanation-title">Объяснение результата</h3>
+
+        <p>Здесь появится объяснение риск-метрики от LLM.</p>
+      </section>
     </section>
   )
 }
