@@ -1,0 +1,153 @@
+.home-page {
+  min-height: calc(100vh - 80px);
+  padding: 40px clamp(16px, 3.125vw, 64px);
+  background-color: #44306c;
+}
+
+.home-page__title {
+  margin: 0 0 32px;
+  color: #ffffff;
+  font-size: clamp(24px, 2.5vw, 40px);
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.home-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 18fr) minmax(0, 7fr);
+  gap: 24px;
+  align-items: stretch;
+  width: 100%;
+
+  transition: grid-template-columns 600ms ease-in-out;
+}
+
+.home-page--result .home-page__layout {
+  grid-template-columns: minmax(0, 10fr) minmax(0, 15fr);
+}
+
+.home-page__panel {
+  min-width: 0;
+  padding: 28px;
+  border-radius: 20px;
+  background-color: #dbdbdb;
+  color: #241b30;
+  text-align: left;
+}
+
+.home-page__panel h2 {
+  margin: 0 0 24px;
+  font-size: clamp(18px, 1.5vw, 24px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.home-page__panel p {
+  line-height: 1.6;
+}
+
+.home-page__panel--deal {
+  display: flex;
+  flex-direction: column;
+}
+
+.home-page__panel--risk {
+  min-width: 0;
+}
+
+.home-page__deal-actions {
+  margin-top: auto;
+  padding-top: 32px;
+}
+
+.home-page__calculate-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 20px;
+
+  border: none;
+  border-radius: 14px;
+
+  background-color: #dfe08f;
+  color: #1f1630;
+
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+
+  transition:
+    background-color 200ms ease,
+    transform 200ms ease;
+}
+
+.home-page__calculate-button:not(:disabled):hover {
+  background-color: #e8e9a5;
+}
+
+.home-page__calculate-button:not(:disabled):active {
+  transform: scale(0.99);
+}
+
+.home-page__calculate-button:focus-visible {
+  outline: 3px solid #44306c;
+  outline-offset: 3px;
+}
+
+.home-page__calculate-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  .home-page__layout,
+  .home-page--result .home-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-page__panel {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .home-page {
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+
+  .home-page__title {
+    margin-bottom: 24px;
+    font-size: 24px;
+  }
+
+  .home-page__layout {
+    gap: 16px;
+  }
+
+  .home-page__panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .home-page__panel h2 {
+    font-size: 18px;
+  }
+
+  .home-page__calculate-button {
+    min-height: 52px;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page__layout,
+  .home-page__calculate-button {
+    transition: none;
+  }
+}
