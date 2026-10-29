@@ -9,7 +9,7 @@ interface DealFormProps {
   onIsinBlur: (isin: string) => void
   onDealChange: () => void
   onValidityChange: (isValid: boolean) => void
-  isInstrumentFound: boolean
+  isInstrumentReady: boolean
   isCalculating: boolean
 }
 
@@ -19,7 +19,7 @@ function DealForm({
   onIsinBlur,
   onDealChange,
   onValidityChange,
-  isInstrumentFound,
+  isInstrumentReady,
   isCalculating,
 }: DealFormProps) {
   const [isin, setIsin] = useState('')
@@ -39,7 +39,7 @@ function DealForm({
     Number.isSafeInteger(parsedQuantity) &&
     parsedQuantity > 0
 
-  const canCalculate = validIsin && validQuantity && isInstrumentFound && !isCalculating
+  const canCalculate = validIsin && validQuantity && isInstrumentReady && !isCalculating
 
   useEffect(() => {
     onValidityChange(canCalculate)

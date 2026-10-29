@@ -2,28 +2,29 @@ import type { InstrumentDetails } from '../types/instrument'
 
 export const mockInstruments: Record<string, InstrumentDetails> = {
   RU000A100006: {
-    instrument: {
-      isin: 'RU000A100006',
-      name: 'Демонстрационная облигация',
-      instrumentType: 'bond',
-      issuerName: 'Тестовый эмитент',
-      currency: 'RUB',
-      faceValue: 1000,
-      couponType: 'fixed',
-      couponFreq: 2,
-      couponRate: 8.5,
-      maturityDate: '2028-12-15',
-    },
-    marketData: {
-      priceType: 'clean',
-      priceClean: 97.5,
-      accruedInt: 12.4,
-      durationMod: 2.1,
-      convexity: null,
-      ytm: null,
-      source: 'mock',
-      tradeDate: '2026-10-20',
-      loadedAt: '2026-10-20T12:00:00Z',
-    },
+    isin: 'RU000A100006',
+    name: 'Демонстрационная облигация',
+    instrument_type: 'bond',
+    issuer_name: 'Тестовый эмитент',
+    currency: 'RUB',
+    face_value: 1000,
+
+    coupon_type: 'fixed',
+    coupon_freq: 2,
+    coupon_rate: 8.5,
+    maturity_date: '2028-12-15',
+
+    price_type: 'clean',
+    price_clean: 1000,
+    accrued_int: 15.5,
+    duration_mod: 3.5,
+    convexity: 12.1,
+    ytm: 9.2,
+    source: 'mock',
+    trade_date: '2026-10-20',
+    loaded_at: '2026-10-20T12:00:00Z',
+
+    ready_for_calculation: true,
+    missing_parameters: [],
   },
 }

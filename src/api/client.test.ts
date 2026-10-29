@@ -88,7 +88,7 @@ describe('apiRequest', () => {
     fetchMock.mockResolvedValueOnce(
       new Response(
         JSON.stringify({
-          code: 'INSTRUMENT_NOT_FOUND',
+          code: 'instrument_not_found',
           message: 'Облигация не найдена',
         }),
         {
@@ -100,7 +100,7 @@ describe('apiRequest', () => {
     await expect(apiRequest('/instruments/RU000A100006')).rejects.toMatchObject({
       name: 'ApiError',
       status: 404,
-      code: 'INSTRUMENT_NOT_FOUND',
+      code: 'instrument_not_found',
       message: 'Облигация не найдена',
     })
   })
@@ -148,12 +148,12 @@ describe('apiRequest', () => {
   })
 
   it('создаёт правильный экземпляр ApiError', () => {
-    const error = new ApiError(404, 'INSTRUMENT_NOT_FOUND', 'Облигация не найдена')
+    const error = new ApiError(404, 'instrument_not_found', 'Облигация не найдена')
 
     expect(error).toBeInstanceOf(Error)
     expect(error).toBeInstanceOf(ApiError)
     expect(error.status).toBe(404)
-    expect(error.code).toBe('INSTRUMENT_NOT_FOUND')
+    expect(error.code).toBe('instrument_not_found')
     expect(error.message).toBe('Облигация не найдена')
   })
 })

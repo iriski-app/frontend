@@ -17,7 +17,7 @@ export async function getInstrumentDetails(isin: string): Promise<InstrumentDeta
     if (
       error instanceof ApiError &&
       error.status === 404 &&
-      error.code === 'INSTRUMENT_NOT_FOUND'
+      error.code === 'instrument_not_found'
     ) {
       return null
     }

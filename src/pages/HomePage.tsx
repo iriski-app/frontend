@@ -87,7 +87,11 @@ function HomePage() {
   }
 
   async function handleCalculate(deal: Deal) {
-    if (instrumentState.status !== 'success' || calculationState.status === 'loading') {
+    if (
+      instrumentState.status !== 'success' ||
+      !instrumentState.details.ready_for_calculation ||
+      calculationState.status === 'loading'
+    ) {
       return
     }
 
@@ -111,19 +115,33 @@ function HomePage() {
         return
       }
 
-      if (error instanceof ApiError && error.code === 'INSUFFICIENT_MARKET_DATA') {
-        setCalculationState({
-          status: 'error',
-          message: 'Недостаточно рыночных данных для расчёта риска.',
-        })
-      } else {
-        setCalculationState({
-          status: 'error',
-          message: 'Не удалось рассчитать риск. Попробуйте ещё раз.',
-        })
+      let message = 'Не удалось рассчитать риск. Попробуйте ещё раз.'
+
+      if (error instanceof ApiError) {
+        switch (error.code) {
+          case 'missing_parameter':
+            message = 'Отсутствуют необходимые параметры для расчёта риска.'
+            break
+
+          case 'missing_duration':
+            message = 'Отсутствует модифицированная дюрация облигации.'
+            break
+
+          case 'calculation_data_not_found':
+            message = 'Не найдены рыночные данные для расчёта риска по сделке.'
+            break
+        }
       }
+
+      setCalculationState({
+        status: 'error',
+        message,
+      })
     }
   }
+
+  const isInstrumentReady =
+    instrumentState.status === 'success' && instrumentState.details.ready_for_calculation
 
   return (
     <>
@@ -145,7 +163,7 @@ function HomePage() {
               onIsinBlur={handleIsinBlur}
               onDealChange={handleDealChange}
               onValidityChange={setCanSubmitDeal}
-              isInstrumentFound={instrumentState.status === 'success'}
+              isInstrumentReady={isInstrumentReady}
               isCalculating={calculationState.status === 'loading'}
             />
 
@@ -170,7 +188,7 @@ function HomePage() {
                 className="home-page__calculate-button"
                 type="submit"
                 form="deal-form"
-                disabled={!canSubmitDeal}
+                disabled={!canSubmitDeal || !isInstrumentReady}
               >
                 {calculationState.status === 'loading' ? 'Расчёт...' : 'Рассчитать риск'}
               </button>

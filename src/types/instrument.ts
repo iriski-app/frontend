@@ -1,31 +1,26 @@
-export interface Instrument {
+export interface InstrumentDetails {
   isin: string
   name: string
-  instrumentType: string | null
-  issuerName: string | null
-  currency: string
-  faceValue: number
+  instrument_type: string | null
+  issuer_name: string | null
+  currency: string | null
+  face_value: number | null
 
-  couponType: string
-  couponFreq: number | null
-  couponRate: number | null
-  maturityDate: string | null
-}
+  coupon_type: string | null
+  coupon_freq: number | null
+  coupon_rate: number | null
+  maturity_date: string | null
 
-export interface InstrumentMarketData {
-  priceType: string
-  priceClean: number | null
-  accruedInt: number | null
-  durationMod: number | null
+  price_type: string | null
+  price_clean: number | null
+  accrued_int: number | null
+  duration_mod: number | null
   convexity: number | null
   ytm: number | null
+  source: string | null
+  trade_date: string | null
+  loaded_at: string | null
 
-  source: string
-  tradeDate: string
-  loadedAt: string
-}
-
-export interface InstrumentDetails {
-  instrument: Instrument
-  marketData: InstrumentMarketData | null
+  ready_for_calculation: boolean
+  missing_parameters: string[]
 }

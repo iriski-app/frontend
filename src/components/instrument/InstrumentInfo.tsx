@@ -4,8 +4,8 @@ interface InstrumentInfoProps {
   details: InstrumentDetails
 }
 
-function formatValue(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') {
+function formatValue(value: string | number | null): string {
+  if (value === null || value === '') {
     return 'Нет данных'
   }
 
@@ -13,42 +13,27 @@ function formatValue(value: string | number | null | undefined): string {
 }
 
 function InstrumentInfo({ details }: InstrumentInfoProps) {
-  const { instrument, marketData } = details
-
-  const instrumentFields = [
-    { label: 'ISIN', value: instrument.isin },
-    { label: 'Название', value: instrument.name },
-    { label: 'Эмитент', value: instrument.issuerName },
-    { label: 'Тип инструмента', value: instrument.instrumentType },
-    { label: 'Валюта', value: instrument.currency },
-    { label: 'Номинал', value: instrument.faceValue },
-    { label: 'Тип купона', value: instrument.couponType },
-    { label: 'Частота купона', value: instrument.couponFreq },
-    { label: 'Купонная ставка', value: instrument.couponRate },
-    { label: 'Дата погашения', value: instrument.maturityDate },
+  const fields = [
+    { label: 'ISIN', value: details.isin },
+    { label: 'Название', value: details.name },
+    { label: 'Эмитент', value: details.issuer_name },
+    { label: 'Тип инструмента', value: details.instrument_type },
+    { label: 'Валюта', value: details.currency },
+    { label: 'Номинал', value: details.face_value },
+    { label: 'Тип купона', value: details.coupon_type },
+    { label: 'Частота купона', value: details.coupon_freq },
+    { label: 'Купонная ставка', value: details.coupon_rate },
+    { label: 'Дата погашения', value: details.maturity_date },
+    { label: 'Тип цены', value: details.price_type },
+    { label: 'Чистая цена', value: details.price_clean },
+    { label: 'Накопленный купонный доход', value: details.accrued_int },
+    { label: 'Модифицированная дюрация', value: details.duration_mod },
+    { label: 'Выпуклость', value: details.convexity },
+    { label: 'Доходность к погашению', value: details.ytm },
+    { label: 'Источник рыночных данных', value: details.source },
+    { label: 'Дата торгов', value: details.trade_date },
+    { label: 'Дата загрузки данных', value: details.loaded_at },
   ]
-
-  const marketFields = marketData
-    ? [
-        { label: 'Тип цены', value: marketData.priceType },
-        { label: 'Чистая цена', value: marketData.priceClean },
-        {
-          label: 'Накопленный купонный доход',
-          value: marketData.accruedInt,
-        },
-        {
-          label: 'Модифицированная дюрация',
-          value: marketData.durationMod,
-        },
-        { label: 'Выпуклость', value: marketData.convexity },
-        { label: 'Доходность к погашению', value: marketData.ytm },
-        { label: 'Источник рыночных данных', value: marketData.source },
-        { label: 'Дата торгов', value: marketData.tradeDate },
-        { label: 'Дата загрузки данных', value: marketData.loadedAt },
-      ]
-    : []
-
-  const fields = [...instrumentFields, ...marketFields]
 
   return (
     <section className="instrument-info" aria-labelledby="instrument-info-title">
@@ -63,8 +48,14 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
         ))}
       </dl>
 
-      {marketData === null && (
-        <p className="instrument-info__notice">Рыночные данные для этой облигации отсутствуют.</p>
+      {!details.ready_for_calculation && (
+        <div className="instrument-info__notice" role="status">
+          <p>Для расчёта риска недостаточно данных.</p>
+
+          {details.missing_parameters.length > 0 && (
+            <p>Отсутствующие параметры: {details.missing_parameters.join(', ')}</p>
+          )}
+        </div>
       )}
     </section>
   )
