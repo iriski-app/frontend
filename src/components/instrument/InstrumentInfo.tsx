@@ -50,7 +50,7 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
 
       {!details.ready_for_calculation && (
         <div className="instrument-info__notice" role="status">
-          <p>Для расчёта риска недостаточно данных.</p>
+          <p>Для расчёта риска недостаточно данных</p>
 
           {details.missing_parameters.length > 0 && (
             <p>Отсутствующие параметры: {details.missing_parameters.join(', ')}</p>

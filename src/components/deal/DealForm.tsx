@@ -2,29 +2,53 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Deal, DealSide } from '../../types/deal'
 import { isValidIsin } from '../../utils/isin'
+import { normalizeQuantityInput } from '../../utils/quantity'
 
 interface DealFormProps {
   onCalculate: (deal: Deal) => void
+  onAdd?: (deal: Deal) => void
   onIsinChange: () => void
   onIsinBlur: (isin: string) => void
   onDealChange: () => void
   onValidityChange: (isValid: boolean) => void
   isInstrumentReady: boolean
+  isInstrumentFound?: boolean
   isCalculating: boolean
 }
 
 function DealForm({
   onCalculate,
+  onAdd,
   onIsinChange,
   onIsinBlur,
   onDealChange,
   onValidityChange,
   isInstrumentReady,
+  isInstrumentFound = false,
   isCalculating,
 }: DealFormProps) {
-  const [isin, setIsin] = useState('')
-  const [side, setSide] = useState<DealSide>('buy')
-  const [quantity, setQuantity] = useState('')
+  const [savedDraft] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('iriski:home-draft:v1') ?? '{}') as {
+        isin?: string
+        side?: DealSide
+        quantity?: string
+      }
+    } catch {
+      return {}
+    }
+  })
+  const [isin, setIsin] = useState(savedDraft.isin ?? '')
+  const [side, setSide] = useState<DealSide>(savedDraft.side === 'sell' ? 'sell' : 'buy')
+  const [quantity, setQuantity] = useState(normalizeQuantityInput(savedDraft.quantity ?? ''))
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem('iriski:home-draft:v1', JSON.stringify({ isin, side, quantity }))
+    } catch {
+      return
+    }
+  }, [isin, side, quantity])
 
   const [isinTouched, setIsinTouched] = useState(false)
   const [quantityTouched, setQuantityTouched] = useState(false)
@@ -67,7 +91,7 @@ function DealForm({
 
   function handleQuantityChange(value: string) {
     if (value === '' || /^\d+$/.test(value)) {
-      setQuantity(value)
+      setQuantity(normalizeQuantityInput(value))
       onDealChange()
     }
   }
@@ -93,19 +117,17 @@ function DealForm({
     onDealChange()
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
+  function createDeal(requireReady: boolean): Deal | null {
     setIsinTouched(true)
     setQuantityTouched(true)
+    if (!validIsin || !validQuantity || (requireReady && !canCalculate)) return null
+    return { isin: normalizedIsin, side, quantity: parsedQuantity }
+  }
 
-    if (!canCalculate) return
-
-    onCalculate({
-      isin: normalizedIsin,
-      side,
-      quantity: parsedQuantity,
-    })
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const deal = createDeal(true)
+    if (deal) onCalculate(deal)
   }
 
   return (
@@ -113,7 +135,7 @@ function DealForm({
       <h2>Параметры расчёта</h2>
 
       <p className="deal-form__description">
-        Заполните параметры сделки, чтобы получить риск-метрики и информацию об облигации.
+        Заполните параметры сделки, чтобы получить риск-метрики и информацию об облигации
       </p>
 
       <div className="deal-form__field">
@@ -141,7 +163,7 @@ function DealForm({
 
         {isinTouched && !validIsin && (
           <p className="deal-form__error" id="deal-isin-error" role="alert">
-            Введите корректный ISIN из 12 символов.
+            Введите корректный ISIN из 12 символов
           </p>
         )}
       </div>
@@ -197,7 +219,7 @@ function DealForm({
 
         {quantityTouched && !validQuantity && (
           <p className="deal-form__error" id="deal-quantity-error" role="alert">
-            Укажите положительное целое количество облигаций.
+            Укажите положительное целое количество облигаций
           </p>
         )}
       </div>
@@ -243,6 +265,19 @@ function DealForm({
 
         <p className="deal-form__hint">Выберите покупку или продажу</p>
       </fieldset>
+      {onAdd && (
+        <button
+          type="button"
+          className="home-page__calculate-button"
+          disabled={!validIsin || !validQuantity || !isInstrumentFound}
+          onClick={() => {
+            const deal = createDeal(false)
+            if (deal) onAdd(deal)
+          }}
+        >
+          Добавить в корзину
+        </button>
+      )}
     </form>
   )
 }

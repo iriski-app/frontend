@@ -23,12 +23,12 @@ function RiskResult({ result }: RiskResultProps) {
 
       {isMock && (
         <p className="risk-result__notice" role="status">
-          Демонстрационные данные. Финансовый расчёт не выполнялся.
+          Демонстрационные данные
         </p>
       )}
 
       <p className="risk-result__description">
-        Чувствительность стоимости сделки к изменению ставки на 1 базисный пункт.
+        Чувствительность стоимости сделки к изменению ставки на 1 базисный пункт
       </p>
 
       <div className="risk-result__metric">

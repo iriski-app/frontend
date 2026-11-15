@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import Header from '../components/layout/Header'
 import DealForm from '../components/deal/DealForm'
@@ -23,17 +23,56 @@ type InstrumentState =
 type CalculationState =
   | { status: 'idle' }
   | { status: 'loading' }
-  | { status: 'success'; result: RiskCalculationResponse }
+  | { status: 'success'; result: RiskCalculationResponse; calculatedAt: string }
   | { status: 'error'; message: string }
 
-function HomePage() {
-  const [instrumentState, setInstrumentState] = useState<InstrumentState>({
-    status: 'idle',
-  })
+interface HomePageProps {
+  basketCount: number
+  onOpenBasket: () => void
+  onAdd: (deal: Deal, instrument: InstrumentDetails) => boolean
+}
 
-  const [calculationState, setCalculationState] = useState<CalculationState>({
-    status: 'idle',
-  })
+function readHomeState(): { instrument: InstrumentState; calculation: CalculationState } {
+  try {
+    const raw = sessionStorage.getItem('iriski:home:v1')
+    if (raw) {
+      const value = JSON.parse(raw)
+      if (value?.instrument?.status && value?.calculation?.status) {
+        const savedCalculation = value.calculation
+        return {
+          instrument: value.instrument.status === 'loading' ? { status: 'idle' } : value.instrument,
+          calculation:
+            savedCalculation.status === 'loading' ||
+            (savedCalculation.status === 'success' &&
+              typeof savedCalculation.calculatedAt !== 'string')
+              ? { status: 'idle' }
+              : savedCalculation,
+        }
+      }
+    }
+  } catch {
+    return { instrument: { status: 'idle' }, calculation: { status: 'idle' } }
+  }
+  return { instrument: { status: 'idle' }, calculation: { status: 'idle' } }
+}
+
+function HomePage({ basketCount, onOpenBasket, onAdd }: HomePageProps) {
+  const [saved] = useState(readHomeState)
+  const [instrumentState, setInstrumentState] = useState<InstrumentState>(saved.instrument)
+
+  const [calculationState, setCalculationState] = useState<CalculationState>(saved.calculation)
+  const [addError, setAddError] = useState('')
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        'iriski:home:v1',
+        JSON.stringify({ instrument: instrumentState, calculation: calculationState }),
+      )
+    } catch {
+      return
+    }
+  }, [instrumentState, calculationState])
 
   const [canSubmitDeal, setCanSubmitDeal] = useState(false)
 
@@ -46,6 +85,7 @@ function HomePage() {
   }
 
   function handleIsinChange() {
+    setAddError('')
     instrumentRequestId.current += 1
 
     setInstrumentState({ status: 'idle' })
@@ -100,7 +140,7 @@ function HomePage() {
     setCalculationState({ status: 'loading' })
 
     try {
-      const result = await calculateRisk(deal)
+      const result = await calculateRisk([deal])
 
       if (currentRequestId !== calculationRequestId.current) {
         return
@@ -109,26 +149,27 @@ function HomePage() {
       setCalculationState({
         status: 'success',
         result,
+        calculatedAt: new Date().toISOString(),
       })
     } catch (error) {
       if (currentRequestId !== calculationRequestId.current) {
         return
       }
 
-      let message = 'Не удалось рассчитать риск. Попробуйте ещё раз.'
+      let message = 'Не удалось рассчитать риск. Попробуйте ещё раз'
 
       if (error instanceof ApiError) {
         switch (error.code) {
           case 'missing_parameter':
-            message = 'Отсутствуют необходимые параметры для расчёта риска.'
+            message = 'Отсутствуют необходимые параметры для расчёта риска'
             break
 
           case 'missing_duration':
-            message = 'Отсутствует модифицированная дюрация облигации.'
+            message = 'Отсутствует модифицированная дюрация облигации'
             break
 
           case 'calculation_data_not_found':
-            message = 'Не найдены рыночные данные для расчёта риска по сделке.'
+            message = 'Не найдены рыночные данные для расчёта риска по сделке'
             break
         }
       }
@@ -143,9 +184,19 @@ function HomePage() {
   const isInstrumentReady =
     instrumentState.status === 'success' && instrumentState.details.ready_for_calculation
 
+  function handleAdd(deal: Deal) {
+    if (instrumentState.status !== 'success') return
+    if (onAdd(deal, instrumentState.details)) {
+      setAddError('')
+      onOpenBasket()
+    } else {
+      setAddError('Бумага с таким ISIN уже есть в корзине')
+    }
+  }
+
   return (
     <>
-      <Header />
+      <Header count={basketCount} onOpenBasket={onOpenBasket} />
 
       <main
         className={`home-page ${calculationState.status === 'success' ? 'home-page--result' : ''}`}
@@ -159,24 +210,31 @@ function HomePage() {
           >
             <DealForm
               onCalculate={handleCalculate}
+              onAdd={handleAdd}
               onIsinChange={handleIsinChange}
               onIsinBlur={handleIsinBlur}
               onDealChange={handleDealChange}
               onValidityChange={setCanSubmitDeal}
               isInstrumentReady={isInstrumentReady}
+              isInstrumentFound={instrumentState.status === 'success'}
               isCalculating={calculationState.status === 'loading'}
             />
+            {addError && (
+              <p className="deal-form__error" role="alert">
+                {addError}
+              </p>
+            )}
 
             {instrumentState.status === 'loading' && (
               <p role="status">Загрузка данных облигации...</p>
             )}
 
             {instrumentState.status === 'not-found' && (
-              <p role="status">Облигация с таким ISIN не найдена.</p>
+              <p role="status">Облигация с таким ISIN не найдена</p>
             )}
 
             {instrumentState.status === 'error' && (
-              <p role="alert">Не удалось загрузить данные облигации. Попробуйте ещё раз.</p>
+              <p role="alert">Не удалось загрузить данные облигации. Попробуйте ещё раз</p>
             )}
 
             {instrumentState.status === 'success' && (
@@ -202,7 +260,7 @@ function HomePage() {
             {calculationState.status === 'idle' && (
               <>
                 <h2>Результаты расчёта</h2>
-                <p>Заполните параметры сделки и выполните расчёт.</p>
+                <p>Заполните параметры сделки и выполните расчёт</p>
               </>
             )}
 
@@ -218,7 +276,13 @@ function HomePage() {
             )}
 
             {calculationState.status === 'success' && (
-              <RiskResult result={calculationState.result} />
+              <>
+                <RiskResult result={calculationState.result} />
+                <p>
+                  Сохранённый расчёт ·{' '}
+                  {new Date(calculationState.calculatedAt).toLocaleString('ru-RU')}
+                </p>
+              </>
             )}
           </section>
         </div>

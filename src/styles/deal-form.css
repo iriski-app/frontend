@@ -71,10 +71,6 @@
   outline-offset: -2px;
 }
 
-.deal-form__input-row:has(> input[aria-invalid='true']) {
-  outline: 2px solid #b34a62;
-}
-
 .deal-form__hint {
   margin: 0 0 0 20px;
   color: #675777;
@@ -108,14 +104,6 @@
   background-color: #c7afdc;
 
   transition: border-color 200ms ease;
-}
-
-.deal-form__stepper:focus-within {
-  border-color: #44306c;
-}
-
-.deal-form__stepper--invalid {
-  border-color: #b34a62;
 }
 
 .deal-form__stepper-button {

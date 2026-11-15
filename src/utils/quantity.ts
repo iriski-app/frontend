@@ -4,3 +4,7 @@ export function isValidQuantity(value: string): boolean {
 
   return /^[0-9]+$/.test(quantity) && Number.isSafeInteger(parsedQuantity) && parsedQuantity > 0
 }
+
+export function normalizeQuantityInput(value: string): string {
+  return value.replace(/^0+(?=\d)/, '')
+}
