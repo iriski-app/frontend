@@ -123,4 +123,83 @@ describe('страница корзины', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: 'Рассчитать' })).toBeEnabled())
     expect(screen.queryByText(/Итог:/)).not.toBeInTheDocument()
   })
+
+  it('повторно проверяет неготовую бумагу и включает её после обновления', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getInstrumentDetails)
+      .mockResolvedValueOnce({
+        ...second,
+        ready_for_calculation: false,
+        missing_parameters: ['convexity'],
+      })
+      .mockResolvedValueOnce(second)
+    vi.mocked(calculateRisk).mockResolvedValueOnce({
+      id: 'calc-second',
+      status: 'success',
+      as_of_date: '2026-11-16',
+      total_dv01_rub: 3,
+      positions: [
+        {
+          id: 'result-second',
+          instrument_id: second.id,
+          side: 'buy',
+          quantity: 1,
+          market_value: 1000,
+          duration_mod: 2,
+          dv01: 3,
+          source: 'moex',
+          market_date: '2026-11-16',
+        },
+      ],
+    })
+
+    render(<App />)
+    await add(user, second.isin)
+    expect(screen.getByText(/Недостаточно данных: convexity/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+
+    await waitFor(() =>
+      expect(calculateRisk).toHaveBeenCalledWith([{ isin: second.isin, side: 'buy', quantity: 1 }]),
+    )
+    expect(screen.getByText('Расчёт по данным от 2026-11-16')).toBeInTheDocument()
+    expect(screen.queryByText(/Дата данных расчёта/)).not.toBeInTheDocument()
+  })
+
+  it('не считает по старому снимку при ошибке обновления', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
+    vi.mocked(getInstrumentDetails).mockRejectedValueOnce(new Error('network'))
+
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Не удалось обновить данные'),
+    )
+    expect(screen.queryByText(/Итог:/)).not.toBeInTheDocument()
+    expect(calculateRisk).toHaveBeenCalledTimes(1)
+  })
+
+  it('исключает бумагу, которая стала неготовой при обновлении', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getInstrumentDetails)
+      .mockResolvedValueOnce(first)
+      .mockResolvedValueOnce({
+        ...first,
+        ready_for_calculation: false,
+        missing_parameters: ['duration_mod'],
+      })
+
+    render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('нет бумаг, готовых к расчёту'),
+    )
+    expect(screen.getByText(/Недостаточно данных: duration_mod/)).toBeInTheDocument()
+    expect(calculateRisk).not.toHaveBeenCalled()
+  })
 })

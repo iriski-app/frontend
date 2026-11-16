@@ -71,8 +71,29 @@ export function useBasket() {
     update(emptyBasket)
   }
 
-  function beginCalculation(): number {
-    return version.current
+  function beginCalculation(): { version: number; items: BasketItem[] } {
+    const items = stateRef.current.items.map((item) => ({ ...item, positionResult: null }))
+    update({ items, total: null })
+    return { version: version.current, items }
+  }
+
+  function applyFreshInstruments(
+    snapshotVersion: number,
+    refreshed: Array<{ id: string; instrument: InstrumentDetails }>,
+  ): { version: number; items: BasketItem[] } | null {
+    if (snapshotVersion !== version.current) return null
+    const byId = new Map(refreshed.map(({ id, instrument }) => [id, instrument]))
+    if (byId.size !== stateRef.current.items.length) return null
+    for (const item of stateRef.current.items) {
+      if (byId.get(item.id)?.isin !== item.deal.isin) return null
+    }
+    const items = stateRef.current.items.map((item) => ({
+      ...item,
+      instrument: byId.get(item.id)!,
+      positionResult: null,
+    }))
+    update({ items, total: null })
+    return { version: version.current, items }
   }
 
   function finishCalculation(
@@ -94,6 +115,7 @@ export function useBasket() {
     restore,
     clear,
     beginCalculation,
+    applyFreshInstruments,
     finishCalculation,
   }
 }

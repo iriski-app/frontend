@@ -22,7 +22,11 @@ interface BasketPageProps {
   onRemove: (id: string) => { item: BasketItem; index: number } | null
   onRestore: (item: BasketItem, index: number) => void
   onClear: () => void
-  beginCalculation: () => number
+  beginCalculation: () => { version: number; items: BasketItem[] }
+  applyFreshInstruments: (
+    version: number,
+    refreshed: Array<{ id: string; instrument: InstrumentDetails }>,
+  ) => { version: number; items: BasketItem[] } | null
   finishCalculation: (
     version: number,
     ids: string[],
@@ -375,6 +379,11 @@ function BasketCard({
           >
             Результат: {item.positionResult.dv01 >= 0 ? '+' : ''}
             {money(item.positionResult.dv01)} ₽/bp
+            {item.positionResult.market_date && (
+              <small className="basket-card__result-date">
+                Расчёт по данным от {item.positionResult.market_date}
+              </small>
+            )}
           </p>
         )}
       </div>
@@ -402,6 +411,7 @@ function BasketPage({
   onRestore,
   onClear,
   beginCalculation,
+  applyFreshInstruments,
   finishCalculation,
 }: BasketPageProps) {
   const [isin, setIsin] = useState('')
@@ -534,16 +544,38 @@ function BasketPage({
       setCalculationError(EDIT_REQUIRED_MESSAGE)
       return
     }
-    if (ready.length === 0) return
-    const version = beginCalculation()
+    if (state.items.length === 0) return
+    const snapshot = beginCalculation()
     const run = ++calculationRun.current
-    const ids = ready.map((item) => item.id)
+    let stage: 'refresh' | 'calculate' = 'refresh'
     setCalculating(true)
     setCalculationError('')
     try {
-      const result = await calculateRisk(ready.map((item) => item.deal))
+      const refreshed = await Promise.all(
+        snapshot.items.map(async (item) => {
+          const instrument = await getInstrumentDetails(item.deal.isin)
+          if (!instrument) throw new Error('instrument_not_found')
+          return { id: item.id, instrument }
+        }),
+      )
       if (run !== calculationRun.current) return
-      if (!finishCalculation(version, ids, result)) {
+      const current = applyFreshInstruments(snapshot.version, refreshed)
+      if (!current) {
+        setCalculationError(
+          'Корзина изменилась во время обновления данных. Запустите расчёт ещё раз',
+        )
+        return
+      }
+      const readyItems = current.items.filter(isReady)
+      if (readyItems.length === 0) {
+        setCalculationError('После обновления данных нет бумаг, готовых к расчёту')
+        return
+      }
+      const ids = readyItems.map((item) => item.id)
+      stage = 'calculate'
+      const result = await calculateRisk(readyItems.map((item) => item.deal))
+      if (run !== calculationRun.current) return
+      if (!finishCalculation(current.version, ids, result)) {
         setCalculationError('Корзина изменилась во время расчёта. Запустите его ещё раз')
       } else {
         requestAnimationFrame(() => {
@@ -558,7 +590,11 @@ function BasketPage({
       }
     } catch {
       if (run !== calculationRun.current) return
-      setCalculationError('Не удалось рассчитать риск. Обновите данные и повторите попытку')
+      setCalculationError(
+        stage === 'refresh'
+          ? 'Не удалось обновить данные всех бумаг. Расчёт не выполнен'
+          : 'Не удалось рассчитать риск. Повторите попытку',
+      )
     } finally {
       if (run === calculationRun.current) setCalculating(false)
     }
@@ -793,8 +829,15 @@ function BasketPage({
               <p>Здесь появится объяснение риск-метрики от LLM</p>
             </section>
           )}
-          <button type="button" onClick={calculate} disabled={ready.length === 0 || calculating}>
-            {calculating ? 'Расчёт...' : 'Рассчитать'}
+          <button
+            type="button"
+            className="basket-page__calculate-button"
+            aria-label={calculating ? 'Обновление и расчёт...' : 'Рассчитать'}
+            onClick={calculate}
+            disabled={state.items.length === 0 || calculating}
+          >
+            <span>{calculating ? 'Обновление и расчёт...' : 'Рассчитать'}</span>
+            {!calculating && <small aria-hidden="true">Данные бумаг обновятся автоматически</small>}
           </button>
         </div>
       </main>

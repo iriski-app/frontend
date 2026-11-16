@@ -28,6 +28,7 @@ function App() {
         onRestore={basket.restore}
         onClear={basket.clear}
         beginCalculation={basket.beginCalculation}
+        applyFreshInstruments={basket.applyFreshInstruments}
         finishCalculation={basket.finishCalculation}
       />
     )
