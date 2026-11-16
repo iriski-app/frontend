@@ -4,6 +4,7 @@ import type { InstrumentDetails } from '../types/instrument'
 import type { RiskCalculationResponse } from '../types/risk'
 import { isValidIsin } from './isin'
 import { isValidQuantity } from './quantity'
+import { createLocalId } from './ids'
 
 export const BASKET_STORAGE_KEY = 'iriski:basket:v1'
 
@@ -31,7 +32,7 @@ export function addItem(
   return {
     items: [
       ...state.items,
-      { id: crypto.randomUUID(), deal: { ...deal, isin }, instrument, positionResult: null },
+      { id: createLocalId(), deal: { ...deal, isin }, instrument, positionResult: null },
     ],
     total: null,
   }

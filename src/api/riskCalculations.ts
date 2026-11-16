@@ -2,6 +2,7 @@ import { apiRequest } from './client'
 import { mockInstruments } from '../mocks/instruments'
 import type { Deal } from '../types/deal'
 import type { RiskCalculationRequest, RiskCalculationResponse } from '../types/risk'
+import { createLocalId } from '../utils/ids'
 
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true'
 
@@ -17,7 +18,7 @@ export async function calculateRisk(deals: Deal[]): Promise<RiskCalculationRespo
           0.5 * (instrument.convexity ?? 0) * 0.0001 * 0.0001) *
         (deal.side === 'buy' ? 1 : -1)
       return {
-        id: crypto.randomUUID(),
+        id: createLocalId(),
         instrument_id: instrument.id,
         side: deal.side,
         quantity: deal.quantity,
@@ -29,7 +30,7 @@ export async function calculateRisk(deals: Deal[]): Promise<RiskCalculationRespo
       }
     })
     return {
-      id: crypto.randomUUID(),
+      id: createLocalId(),
       status: 'success',
       as_of_date: new Date().toISOString(),
       total_dv01_rub: positions.reduce((sum, position) => sum + position.dv01, 0),

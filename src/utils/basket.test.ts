@@ -18,8 +18,12 @@ const second = mockInstruments.RU000A0JX0J2
 
 beforeEach(() => {
   sessionStorage.clear()
+  let nextId = 0
   vi.stubGlobal('crypto', {
-    randomUUID: vi.fn().mockReturnValueOnce('one').mockReturnValueOnce('two'),
+    getRandomValues: vi.fn((bytes: Uint8Array) => {
+      bytes[15] = ++nextId
+      return bytes
+    }),
   })
 })
 
