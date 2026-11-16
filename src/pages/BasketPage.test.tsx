@@ -36,7 +36,7 @@ beforeEach(() => {
         duration_mod: 2,
         dv01: -2,
         source: 'moex',
-        market_date: '2026-11-15',
+        market_date: first.trade_date,
       },
     ],
   })
@@ -97,6 +97,7 @@ describe('страница корзины', () => {
     await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
     await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
     expect(calculateRisk).toHaveBeenCalledWith([{ isin: first.isin, side: 'buy', quantity: 1 }])
+    expect(screen.queryByText(/Расчёт по данным от/)).not.toBeInTheDocument()
     expect(screen.getByText(/Рассчитано 1 из 2 позиций/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: `Редактировать ${first.name}` }))
     const editQuantity = within(screen.getByRole('article', { name: first.name })).getByRole(

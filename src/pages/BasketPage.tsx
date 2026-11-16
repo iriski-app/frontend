@@ -281,7 +281,7 @@ function BasketCard({
           <dd>{details.ytm === null ? 'Нет данных' : money(details.ytm)}</dd>
         </div>
         <div>
-          <dt>Дата загрузки данных</dt>
+          <dt>Данные загружены</dt>
           <dd>
             {details.loaded_at ? new Date(details.loaded_at).toLocaleString('ru-RU') : 'Нет данных'}
           </dd>
@@ -378,11 +378,12 @@ function BasketCard({
           >
             Результат: {item.positionResult.dv01 >= 0 ? '+' : ''}
             {money(item.positionResult.dv01)} ₽/bp
-            {item.positionResult.market_date && (
-              <small className="basket-card__result-date">
-                Расчёт по данным от {item.positionResult.market_date}
-              </small>
-            )}
+            {item.positionResult.market_date &&
+              item.positionResult.market_date.slice(0, 10) !== details.trade_date?.slice(0, 10) && (
+                <small className="basket-card__result-date">
+                  Расчёт по данным от {item.positionResult.market_date}
+                </small>
+              )}
           </p>
         )}
       </div>
