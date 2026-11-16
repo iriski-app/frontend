@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import type { Deal, DealSide } from '../../types/deal'
 import { isValidIsin } from '../../utils/isin'
-import { normalizeQuantityInput } from '../../utils/quantity'
+import { isValidQuantity, MAX_QUANTITY, normalizeQuantityInput } from '../../utils/quantity'
 
 interface DealFormProps {
   onCalculate: (deal: Deal) => void
@@ -57,11 +57,7 @@ function DealForm({
   const parsedQuantity = Number(quantity)
 
   const validIsin = isValidIsin(normalizedIsin)
-  const validQuantity =
-    quantity.trim() !== '' &&
-    /^\d+$/.test(quantity) &&
-    Number.isSafeInteger(parsedQuantity) &&
-    parsedQuantity > 0
+  const validQuantity = isValidQuantity(quantity)
 
   const canCalculate = validIsin && validQuantity && isInstrumentReady && !isCalculating
 
@@ -108,9 +104,7 @@ function DealForm({
   function increaseQuantity() {
     const current = Number(quantity)
     const next =
-      Number.isSafeInteger(current) && current >= 1 && current < Number.MAX_SAFE_INTEGER
-        ? current + 1
-        : 1
+      Number.isSafeInteger(current) && current >= 1 ? Math.min(MAX_QUANTITY, current + 1) : 1
 
     setQuantity(String(next))
     setQuantityTouched(true)
@@ -206,6 +200,7 @@ function DealForm({
               type="button"
               className="deal-form__stepper-button"
               aria-label="Увеличить количество облигаций"
+              disabled={quantity === String(MAX_QUANTITY)}
               onClick={increaseQuantity}
             >
               +
@@ -214,7 +209,7 @@ function DealForm({
         </div>
 
         <p className="deal-form__hint" id="deal-quantity-hint">
-          Укажите количество облигаций в сделке
+          Укажите количество облигаций в сделке, не более 1 000 000 000
         </p>
 
         {quantityTouched && !validQuantity && (

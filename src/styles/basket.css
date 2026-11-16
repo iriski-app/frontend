@@ -255,7 +255,7 @@ button.site-header__brand {
 
 .basket-add {
   display: grid;
-  grid-template-columns: minmax(200px, 1.3fr) minmax(170px, 0.8fr) minmax(210px, 1fr) auto;
+  grid-template-columns: minmax(200px, 1.3fr) minmax(170px, 0.8fr) minmax(240px, 1fr) auto;
   align-items: end;
   gap: 16px;
   margin-bottom: 24px;
@@ -351,8 +351,12 @@ button.site-header__brand {
   background: #eadcf3;
 }
 .basket-form__field .deal-form__stepper {
+  grid-template-columns: 42px 140px 42px;
   justify-self: start;
   min-height: 54px;
+}
+.basket-form__field .deal-form__stepper input {
+  width: 140px;
 }
 .basket-add .basket-form__error,
 .basket-card__edit .basket-form__error {
@@ -515,7 +519,7 @@ button.site-header__brand {
 }
 .basket-card__edit {
   display: grid;
-  grid-template-columns: minmax(210px, 250px) minmax(170px, 220px) auto;
+  grid-template-columns: minmax(240px, 250px) minmax(170px, 220px) auto;
   align-items: end;
   gap: 16px;
 }
@@ -543,6 +547,13 @@ button.site-header__brand {
 }
 .basket-card__result--negative {
   color: #a3222c;
+}
+.basket-card__result-date {
+  display: block;
+  margin-top: 4px;
+  color: #544b5e;
+  font-size: 13px;
+  font-weight: 400;
 }
 .basket-page__notice {
   font-size: 15px;
@@ -631,14 +642,24 @@ button.site-header__brand {
 .basket-page__summary > button {
   position: fixed;
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
   left: 50%;
   bottom: 20px;
   width: min(100%, 430px);
-  min-height: 72px;
+  min-height: 82px;
   transform: translateX(-50%);
   background: #dfe08f;
   font-size: 23px;
   box-shadow: 0 8px 24px rgb(25 15 45 / 20%);
+}
+.basket-page__calculate-button small {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.2;
 }
 .basket-page__summary > button:hover:not(:disabled) {
   background: #e8e9a5;

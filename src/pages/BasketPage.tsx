@@ -8,7 +8,7 @@ import type { DealSide } from '../types/deal'
 import type { InstrumentDetails } from '../types/instrument'
 import { isReady, normalizeIsin } from '../utils/basket'
 import { isValidIsin } from '../utils/isin'
-import { isValidQuantity, normalizeQuantityInput } from '../utils/quantity'
+import { isValidQuantity, MAX_QUANTITY, normalizeQuantityInput } from '../utils/quantity'
 
 interface BasketPageProps {
   state: BasketState
@@ -340,10 +340,9 @@ function BasketCard({
                   type="button"
                   className="deal-form__stepper-button"
                   aria-label={`Увеличить количество для ${details.name}`}
+                  disabled={quantity === String(MAX_QUANTITY)}
                   onClick={() =>
-                    setQuantity(
-                      String(Math.min(Number.MAX_SAFE_INTEGER, Number(quantity) + 1 || 1)),
-                    )
+                    setQuantity(String(Math.min(MAX_QUANTITY, Number(quantity) + 1 || 1)))
                   }
                 >
                   +
@@ -736,9 +735,9 @@ function BasketPage({
                 type="button"
                 className="deal-form__stepper-button"
                 aria-label="Увеличить количество бумаг"
-                disabled={adding}
+                disabled={adding || quantity === String(MAX_QUANTITY)}
                 onClick={() =>
-                  setQuantity(String(Math.min(Number.MAX_SAFE_INTEGER, Number(quantity) + 1 || 1)))
+                  setQuantity(String(Math.min(MAX_QUANTITY, Number(quantity) + 1 || 1)))
                 }
               >
                 +

@@ -49,6 +49,29 @@ async function add(user: ReturnType<typeof userEvent.setup>, isin: string) {
 }
 
 describe('страница корзины', () => {
+  it('ограничивает количество при добавлении и редактировании', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const addQuantity = screen.getByRole('textbox', { name: 'Количество бумаг' })
+    await user.clear(addQuantity)
+    await user.type(addQuantity, '10000000000000000000000000000')
+    expect(addQuantity).toHaveValue('1000000000')
+    expect(screen.getByRole('button', { name: 'Увеличить количество бумаг' })).toBeDisabled()
+
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: `Редактировать ${first.name}` }))
+    const editQuantity = within(screen.getByRole('article', { name: first.name })).getByRole(
+      'textbox',
+      { name: 'Количество бумаг' },
+    )
+    await user.clear(editQuantity)
+    await user.type(editQuantity, '10000000000000000000000000000')
+    expect(editQuantity).toHaveValue('1000000000')
+    expect(
+      screen.getByRole('button', { name: `Увеличить количество для ${first.name}` }),
+    ).toBeDisabled()
+  })
+
   it('добавляет бумагу, запрещает дубликат и восстанавливает карточку без нового запроса', async () => {
     const user = userEvent.setup()
     const view = render(<App />)
