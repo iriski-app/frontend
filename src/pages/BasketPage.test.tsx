@@ -5,9 +5,15 @@ import App from '../App'
 import { mockInstruments } from '../mocks/instruments'
 import { getInstrumentDetails } from '../api/instruments'
 import { calculateRisk } from '../api/riskCalculations'
+import { getExplanation } from '../api/explanations'
+import { ApiError } from '../api/client'
 
 vi.mock('../api/instruments', () => ({ getInstrumentDetails: vi.fn() }))
 vi.mock('../api/riskCalculations', () => ({ calculateRisk: vi.fn() }))
+vi.mock('../api/explanations', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../api/explanations')>()),
+  getExplanation: vi.fn(),
+}))
 
 const first = mockInstruments.RU000A100006
 const second = mockInstruments.RU000A0JX0J2
@@ -40,6 +46,12 @@ beforeEach(() => {
       },
     ],
   })
+  vi.mocked(getExplanation).mockResolvedValue({
+    calculationId: 'calc',
+    text: 'Проверенное объяснение',
+    sources: ['Сохранённый расчёт'],
+    mode: 'verified',
+  })
 })
 
 async function add(user: ReturnType<typeof userEvent.setup>, isin: string) {
@@ -49,6 +61,83 @@ async function add(user: ReturnType<typeof userEvent.setup>, isin: string) {
 }
 
 describe('страница корзины', () => {
+  it('получает объяснение по ID, показывает загрузку и сохраняет ответ в этой вкладке', async () => {
+    const user = userEvent.setup()
+    let resolveExplanation!: (value: Awaited<ReturnType<typeof getExplanation>>) => void
+    vi.mocked(getExplanation).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveExplanation = resolve
+      }),
+    )
+    const view = render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Получить объяснение' }))
+    expect(getExplanation).toHaveBeenCalledWith('calc', -2, expect.any(AbortSignal))
+    expect(screen.getByText('Готовим объяснение для этого расчёта')).toBeInTheDocument()
+    expect(screen.getByText(/Итог:/)).toBeInTheDocument()
+
+    resolveExplanation({
+      calculationId: 'calc',
+      text: 'Проверенное объяснение',
+      sources: ['Сохранённый расчёт'],
+      mode: 'verified',
+    })
+    await waitFor(() => expect(screen.getByText('Проверенное объяснение')).toBeInTheDocument())
+    expect(screen.getByText('Сохранённый расчёт')).toBeInTheDocument()
+
+    view.unmount()
+    render(<App />)
+    expect(screen.getByText('Проверенное объяснение')).toBeInTheDocument()
+    expect(getExplanation).toHaveBeenCalledTimes(1)
+  })
+
+  it('оставляет расчёт видимым при ошибке объяснения и позволяет повторить запрос', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getExplanation).mockRejectedValueOnce(new ApiError(503, 'llm_unavailable', 'error'))
+    render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
+
+    await user.click(screen.getByRole('button', { name: 'Получить объяснение' }))
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Сервис объяснений сейчас недоступен'),
+    )
+    expect(screen.getByText(/Итог:/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Повторить запрос' }))
+    await waitFor(() => expect(screen.getByText('Проверенное объяснение')).toBeInTheDocument())
+    expect(getExplanation).toHaveBeenCalledTimes(2)
+  })
+
+  it('игнорирует запоздалое объяснение после изменения корзины', async () => {
+    const user = userEvent.setup()
+    let resolveExplanation!: (value: Awaited<ReturnType<typeof getExplanation>>) => void
+    vi.mocked(getExplanation).mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveExplanation = resolve
+      }),
+    )
+    render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: 'Получить объяснение' }))
+    await user.click(screen.getByRole('button', { name: `Редактировать ${first.name}` }))
+    await user.click(screen.getByRole('button', { name: 'Сохранить' }))
+
+    resolveExplanation({
+      calculationId: 'calc',
+      text: 'Устаревшее объяснение',
+      sources: [],
+      mode: 'verified',
+    })
+    expect(screen.queryByText('Устаревшее объяснение')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Итог:/)).not.toBeInTheDocument()
+  })
+
   it('ограничивает количество при добавлении и редактировании', async () => {
     const user = userEvent.setup()
     render(<App />)

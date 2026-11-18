@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import Header from '../components/layout/Header'
+import RiskExplanation from '../components/risk/RiskExplanation'
 import { getInstrumentDetails } from '../api/instruments'
 import { calculateRisk } from '../api/riskCalculations'
 import type { BasketItem, BasketState } from '../types/basket'
@@ -476,7 +477,7 @@ function BasketPage({
     setConfirmClear(false)
   }
 
-  async function add(event: FormEvent) {
+  async function add(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const normalized = normalizeIsin(isin)
     if (!isValidIsin(normalized)) {
@@ -826,7 +827,11 @@ function BasketPage({
               aria-labelledby="basket-explanation-title"
             >
               <h2 id="basket-explanation-title">Объяснение результата</h2>
-              <p>Здесь появится объяснение риск-метрики от LLM</p>
+              <RiskExplanation
+                key={state.total.calculationId}
+                calculationId={state.total.calculationId}
+                totalDv01Rub={state.total.value}
+              />
             </section>
           )}
           <button

@@ -1,0 +1,73 @@
+.risk-explanation {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+}
+
+.risk-explanation button {
+  min-height: 48px;
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 50px;
+  background: #d1bde2;
+  color: #241b30;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+
+.risk-explanation button:hover:not(:disabled) {
+  background: #c3a9d9;
+}
+
+.risk-explanation button:focus-visible {
+  outline: 3px solid #8063aa;
+  outline-offset: 3px;
+}
+
+.risk-explanation button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.risk-explanation__answer {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.risk-explanation .risk-explanation__status {
+  margin: 0;
+  color: #44306c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.risk-explanation .risk-explanation__text {
+  margin: 0;
+  color: #241b30;
+  font-size: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.risk-explanation .risk-explanation__error {
+  margin: 0;
+  color: #a3222c;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.risk-explanation__sources {
+  color: #675777;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.risk-explanation__sources ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+}
