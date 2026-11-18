@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import type { FormEvent } from 'react'
+import type { SubmitEvent } from 'react'
 import type { Deal, DealSide } from '../../types/deal'
 import { isValidIsin } from '../../utils/isin'
 import { isValidQuantity, MAX_QUANTITY, normalizeQuantityInput } from '../../utils/quantity'
@@ -118,7 +118,7 @@ function DealForm({
     return { isin: normalizedIsin, side, quantity: parsedQuantity }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     const deal = createDeal(true)
     if (deal) onCalculate(deal)

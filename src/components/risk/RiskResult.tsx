@@ -1,4 +1,5 @@
 import type { RiskCalculationResponse } from '../../types/risk'
+import RiskExplanation from './RiskExplanation'
 
 interface RiskResultProps {
   result: RiskCalculationResponse
@@ -43,7 +44,11 @@ function RiskResult({ result }: RiskResultProps) {
       <section className="risk-result__explanation" aria-labelledby="risk-explanation-title">
         <h3 id="risk-explanation-title">Объяснение результата</h3>
 
-        <p>Здесь появится объяснение риск-метрики от LLM.</p>
+        <RiskExplanation
+          key={result.id}
+          calculationId={result.id}
+          totalDv01Rub={result.total_dv01_rub}
+        />
       </section>
     </section>
   )
