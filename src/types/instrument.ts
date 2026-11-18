@@ -1,4 +1,5 @@
 export interface InstrumentDetails {
+  id: string
   isin: string
   name: string
   instrument_type: string | null

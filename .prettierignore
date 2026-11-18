@@ -8,3 +8,4 @@ tsconfig.app.json
 tsconfig.node.json
 tsconfig.json
 vite.config.ts
+.prettierrc

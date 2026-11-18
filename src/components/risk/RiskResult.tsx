@@ -1,4 +1,5 @@
 import type { RiskCalculationResponse } from '../../types/risk'
+import RiskExplanation from './RiskExplanation'
 
 interface RiskResultProps {
   result: RiskCalculationResponse
@@ -23,12 +24,12 @@ function RiskResult({ result }: RiskResultProps) {
 
       {isMock && (
         <p className="risk-result__notice" role="status">
-          Демонстрационные данные. Финансовый расчёт не выполнялся.
+          Демонстрационные данные
         </p>
       )}
 
       <p className="risk-result__description">
-        Чувствительность стоимости сделки к изменению ставки на 1 базисный пункт.
+        Чувствительность стоимости сделки к изменению ставки на 1 базисный пункт
       </p>
 
       <div className="risk-result__metric">
@@ -43,7 +44,11 @@ function RiskResult({ result }: RiskResultProps) {
       <section className="risk-result__explanation" aria-labelledby="risk-explanation-title">
         <h3 id="risk-explanation-title">Объяснение результата</h3>
 
-        <p>Здесь появится объяснение риск-метрики от LLM.</p>
+        <RiskExplanation
+          key={result.id}
+          calculationId={result.id}
+          totalDv01Rub={result.total_dv01_rub}
+        />
       </section>
     </section>
   )

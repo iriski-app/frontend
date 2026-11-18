@@ -32,7 +32,10 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
     { label: 'Доходность к погашению', value: details.ytm },
     { label: 'Источник рыночных данных', value: details.source },
     { label: 'Дата торгов', value: details.trade_date },
-    { label: 'Дата загрузки данных', value: details.loaded_at },
+    {
+      label: 'Данные загружены',
+      value: details.loaded_at ? new Date(details.loaded_at).toLocaleString('ru-RU') : null,
+    },
   ]
 
   return (
@@ -50,7 +53,7 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
 
       {!details.ready_for_calculation && (
         <div className="instrument-info__notice" role="status">
-          <p>Для расчёта риска недостаточно данных.</p>
+          <p>Для расчёта риска недостаточно данных</p>
 
           {details.missing_parameters.length > 0 && (
             <p>Отсутствующие параметры: {details.missing_parameters.join(', ')}</p>

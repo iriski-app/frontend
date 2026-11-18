@@ -71,10 +71,6 @@
   outline-offset: -2px;
 }
 
-.deal-form__input-row:has(> input[aria-invalid='true']) {
-  outline: 2px solid #b34a62;
-}
-
 .deal-form__hint {
   margin: 0 0 0 20px;
   color: #675777;
@@ -96,7 +92,7 @@
 
 .deal-form__stepper {
   display: grid;
-  grid-template-columns: 42px 74px 42px;
+  grid-template-columns: 42px 134px 42px;
   align-items: center;
 
   flex-shrink: 0;
@@ -108,14 +104,6 @@
   background-color: #c7afdc;
 
   transition: border-color 200ms ease;
-}
-
-.deal-form__stepper:focus-within {
-  border-color: #44306c;
-}
-
-.deal-form__stepper--invalid {
-  border-color: #b34a62;
 }
 
 .deal-form__stepper-button {
@@ -149,7 +137,7 @@
 }
 
 .deal-form__stepper input {
-  width: 74px;
+  width: 134px;
   min-width: 0;
   height: 42px;
   padding: 0 6px;
@@ -339,7 +327,7 @@
   }
 
   .deal-form__stepper {
-    grid-template-columns: 34px 58px 34px;
+    grid-template-columns: 34px 118px 34px;
     min-height: 46px;
   }
 
@@ -350,7 +338,7 @@
   }
 
   .deal-form__stepper input {
-    width: 58px;
+    width: 118px;
     height: 38px;
     font-size: 14px;
   }
