@@ -5,6 +5,8 @@ export interface InstrumentDetails {
   instrument_type: string | null
   issuer_name: string | null
   currency: string | null
+  price_currency?: string | null
+  accrued_int_currency?: string | null
   face_value: number | null
 
   coupon_type: string | null
@@ -23,5 +25,6 @@ export interface InstrumentDetails {
   loaded_at: string | null
 
   ready_for_calculation: boolean
+  calculation_status?: 'ready' | 'estimate_possible' | 'unavailable'
   missing_parameters: string[]
 }

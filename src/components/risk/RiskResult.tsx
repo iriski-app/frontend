@@ -1,5 +1,7 @@
 import type { RiskCalculationResponse } from '../../types/risk'
 import RiskExplanation from './RiskExplanation'
+import StressScenario from './StressScenario'
+import CalculationDetails from './CalculationDetails'
 
 interface RiskResultProps {
   result: RiskCalculationResponse
@@ -41,6 +43,10 @@ function RiskResult({ result }: RiskResultProps) {
         </strong>
       </div>
 
+      {result.positions.map((position) => (
+        <CalculationDetails key={position.id} position={position} />
+      ))}
+
       <section className="risk-result__explanation" aria-labelledby="risk-explanation-title">
         <h3 id="risk-explanation-title">Объяснение результата</h3>
 
@@ -48,8 +54,12 @@ function RiskResult({ result }: RiskResultProps) {
           key={result.id}
           calculationId={result.id}
           totalDv01Rub={result.total_dv01_rub}
+          positionLabels={Object.fromEntries(
+            result.positions.map((position, index) => [position.id, `позиция ${index + 1}`]),
+          )}
         />
       </section>
+      <StressScenario key={result.id} calculation={result} />
     </section>
   )
 }

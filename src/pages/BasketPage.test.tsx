@@ -61,6 +61,84 @@ async function add(user: ReturnType<typeof userEvent.setup>, isin: string) {
 }
 
 describe('страница корзины', () => {
+  it('включает estimate_possible, показывает ML/FX и сохраняет их после перезагрузки', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getInstrumentDetails).mockResolvedValue({
+      ...first,
+      currency: 'USD',
+      price_currency: 'USD',
+      accrued_int_currency: 'RUB',
+      ready_for_calculation: false,
+      calculation_status: 'estimate_possible',
+      duration_mod: null,
+      missing_parameters: ['duration_mod'],
+    })
+    const response = await vi.mocked(calculateRisk).getMockImplementation()!([])
+    vi.mocked(calculateRisk).mockResolvedValue({
+      ...response,
+      positions: [
+        {
+          ...response.positions[0],
+          price_currency: 'USD',
+          accrued_int_currency: 'RUB',
+          price_fx_rate: 95,
+          price_fx_date: '2026-11-15',
+          price_fx_source: 'cbr',
+          duration_estimate: {
+            source: 'catboost',
+            model_version: 'v1',
+            low: 1.8,
+            high: 2.2,
+            review_required: true,
+            limitations: ['Оценка по модели'],
+          },
+        },
+      ],
+    })
+    const view = render(<App />)
+    await add(user, first.isin)
+    expect(
+      within(screen.getByText('Цена бумаги').parentElement!).getByText('1 000 USD'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('15,5 RUB')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    expect(await screen.findByText(/Итог:/)).toBeInTheDocument()
+    expect(calculateRisk).toHaveBeenCalledWith(
+      [{ isin: first.isin, side: 'buy', quantity: 1 }],
+      false,
+    )
+    expect(screen.getByText(/источник: Банк России/)).toBeInTheDocument()
+    expect(screen.getByText('Оценка требует проверки специалистом')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Рассчитать стресс-сценарий' }),
+    ).not.toBeInTheDocument()
+    view.unmount()
+    render(<App />)
+    expect(screen.getByText(/модель v1/)).toBeInTheDocument()
+    expect(screen.getByText('Оценка по модели')).toBeInTheDocument()
+  })
+
+  it('показывает контекст отсутствующего FX и не оставляет успешный итог', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await add(user, first.isin)
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    expect(await screen.findByText(/Итог:/)).toBeInTheDocument()
+    vi.mocked(calculateRisk).mockRejectedValueOnce(
+      new ApiError(422, 'missing_fx_rate', 'missing', {
+        isin: first.isin,
+        field: 'price_clean',
+        currency: 'CNY',
+        as_of_date: '2026-11-19',
+      }),
+    )
+    await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      `Не найден курс валюты к рублю на дату расчёта (${first.isin} · чистая цена · CNY · 2026-11-19)`,
+    )
+    expect(screen.queryByText(/Итог:/)).not.toBeInTheDocument()
+  })
+
   it('получает объяснение по ID, показывает загрузку и сохраняет ответ в этой вкладке', async () => {
     const user = userEvent.setup()
     let resolveExplanation!: (value: Awaited<ReturnType<typeof getExplanation>>) => void
@@ -96,7 +174,9 @@ describe('страница корзины', () => {
 
   it('оставляет расчёт видимым при ошибке объяснения и позволяет повторить запрос', async () => {
     const user = userEvent.setup()
-    vi.mocked(getExplanation).mockRejectedValueOnce(new ApiError(503, 'llm_unavailable', 'error'))
+    vi.mocked(getExplanation).mockRejectedValueOnce(
+      new ApiError(503, 'explanation_unavailable', 'error'),
+    )
     render(<App />)
     await add(user, first.isin)
     await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
@@ -182,10 +262,13 @@ describe('страница корзины', () => {
     render(<App />)
     await add(user, first.isin)
     await add(user, second.isin)
-    expect(screen.getByText(/Недостаточно данных: convexity/)).toBeInTheDocument()
+    expect(screen.getByText(/Расчёт недоступен: выпуклость/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
     await waitFor(() => expect(screen.getByText(/Итог:/)).toBeInTheDocument())
-    expect(calculateRisk).toHaveBeenCalledWith([{ isin: first.isin, side: 'buy', quantity: 1 }])
+    expect(calculateRisk).toHaveBeenCalledWith(
+      [{ isin: first.isin, side: 'buy', quantity: 1 }],
+      true,
+    )
     expect(screen.queryByText(/Расчёт по данным от/)).not.toBeInTheDocument()
     expect(screen.getByText(/Рассчитано 1 из 2 позиций/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: `Редактировать ${first.name}` }))
@@ -268,11 +351,14 @@ describe('страница корзины', () => {
 
     render(<App />)
     await add(user, second.isin)
-    expect(screen.getByText(/Недостаточно данных: convexity/)).toBeInTheDocument()
+    expect(screen.getByText(/Расчёт недоступен: выпуклость/)).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Рассчитать' }))
 
     await waitFor(() =>
-      expect(calculateRisk).toHaveBeenCalledWith([{ isin: second.isin, side: 'buy', quantity: 1 }]),
+      expect(calculateRisk).toHaveBeenCalledWith(
+        [{ isin: second.isin, side: 'buy', quantity: 1 }],
+        false,
+      ),
     )
     expect(screen.getByText('Расчёт по данным от 2026-11-16')).toBeInTheDocument()
     expect(screen.queryByText(/Дата данных расчёта/)).not.toBeInTheDocument()
@@ -312,7 +398,7 @@ describe('страница корзины', () => {
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent('нет бумаг, готовых к расчёту'),
     )
-    expect(screen.getByText(/Недостаточно данных: duration_mod/)).toBeInTheDocument()
+    expect(screen.getByText(/Расчёт недоступен: модифицированная дюрация/)).toBeInTheDocument()
     expect(calculateRisk).not.toHaveBeenCalled()
   })
 })

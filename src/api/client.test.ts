@@ -12,6 +12,50 @@ describe('apiRequest', () => {
     vi.unstubAllGlobals()
   })
 
+  it('сохраняет проверенный контекст валютной ошибки', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          code: 'missing_fx_rate',
+          message: 'Нет курса',
+          details: {
+            isin: 'RU000A100006',
+            instrument_id: 'id',
+            field: 'price_clean',
+            currency: 'CNY',
+            as_of_date: '2026-11-19',
+            unexpected: 'ignored',
+          },
+        }),
+        { status: 422 },
+      ),
+    )
+    await expect(apiRequest('/risk-calculations')).rejects.toMatchObject({
+      details: {
+        isin: 'RU000A100006',
+        instrument_id: 'id',
+        field: 'price_clean',
+        currency: 'CNY',
+        as_of_date: '2026-11-19',
+      },
+    })
+  })
+
+  it.each([null, [], 'text', { isin: {}, field: 123 }])(
+    'не передаёт в UI неверно типизированный details: %j',
+    async (details) => {
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 'missing_parameter', details }), { status: 422 }),
+      )
+      await expect(apiRequest('/risk-calculations')).rejects.toSatisfy(
+        (error: ApiError) =>
+          error instanceof ApiError &&
+          error.details?.isin === undefined &&
+          error.details?.field === undefined,
+      )
+    },
+  )
+
   it('отправляет GET-запрос с credentials: include', async () => {
     const responseData = { isin: 'RU000A100006' }
 

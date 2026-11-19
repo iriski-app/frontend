@@ -8,6 +8,30 @@ afterEach(() => {
 })
 
 describe('getExplanation', () => {
+  it('сохраняет ограничения и признак отсутствия подробного разбора', async () => {
+    vi.stubEnv('VITE_USE_MOCK_API', 'false')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            calculation_id: 'calc',
+            text: 'Текст',
+            validation_ok: true,
+            sources: ['total_rub'],
+            calculation_details_available: false,
+            limitations: ['Приближённый расчёт'],
+          }),
+        ),
+      ),
+    )
+    const { getExplanation } = await import('./explanations')
+    expect(await getExplanation('calc', -1)).toMatchObject({
+      calculationDetailsAvailable: false,
+      limitations: ['Приближённый расчёт'],
+    })
+  })
+
   it('в обычном режиме запрашивает объяснение только по ID расчёта', async () => {
     vi.stubEnv('VITE_USE_MOCK_API', 'false')
     const response = {

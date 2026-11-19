@@ -8,6 +8,8 @@ export interface Explanation {
   text: string
   sources: string[]
   mode: 'verified' | 'demo'
+  calculationDetailsAvailable?: boolean
+  limitations?: string[]
 }
 
 export class ExplanationError extends Error {
@@ -38,7 +40,27 @@ function parseExplanation(value: unknown, calculationId: string): Explanation {
     throw new ExplanationError('invalid_response')
   }
 
-  return { calculationId, text: text.trim(), sources, mode: 'verified' }
+  if (
+    data.calculation_details_available !== undefined &&
+    typeof data.calculation_details_available !== 'boolean'
+  )
+    throw new ExplanationError('invalid_response')
+  if (
+    data.limitations != null &&
+    (!Array.isArray(data.limitations) ||
+      !data.limitations.every((item) => typeof item === 'string'))
+  )
+    throw new ExplanationError('invalid_response')
+  return {
+    calculationId,
+    text: text.trim(),
+    sources,
+    mode: 'verified',
+    ...(typeof data.calculation_details_available === 'boolean'
+      ? { calculationDetailsAvailable: data.calculation_details_available }
+      : {}),
+    ...(Array.isArray(data.limitations) ? { limitations: data.limitations as string[] } : {}),
+  }
 }
 
 function mockExplanation(calculationId: string, totalDv01Rub: number | null): Explanation {

@@ -8,6 +8,8 @@ export const mockInstruments: Record<string, InstrumentDetails> = {
     instrument_type: 'bond',
     issuer_name: 'Тестовый эмитент',
     currency: 'RUB',
+    price_currency: 'RUB',
+    accrued_int_currency: 'RUB',
     face_value: 1000,
 
     coupon_type: 'fixed',
@@ -35,6 +37,8 @@ export const mockInstruments: Record<string, InstrumentDetails> = {
     instrument_type: 'bond',
     issuer_name: 'Второй эмитент',
     currency: 'RUB',
+    price_currency: 'RUB',
+    accrued_int_currency: 'RUB',
     face_value: 1000,
     coupon_type: 'fixed',
     coupon_freq: null,

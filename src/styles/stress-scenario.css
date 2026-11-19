@@ -1,0 +1,53 @@
+.stress-scenario {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #d1bde2;
+  text-align: left;
+}
+.stress-scenario > p,
+.stress-scenario form > p,
+.stress-scenario__result p,
+.calculation-details {
+  color: #675777;
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.stress-scenario form {
+  display: grid;
+  gap: 12px;
+}
+.stress-scenario__range-label {
+  font-size: 12px;
+  margin-top: 6px;
+}
+.stress-scenario__range {
+  width: 100%;
+  margin: 0;
+  accent-color: #44306c;
+  cursor: pointer;
+  min-height: 30px;
+}
+.stress-scenario__bounds {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #675777;
+}
+.stress-scenario__result {
+  margin-top: 18px;
+  padding: 14px 18px;
+  border-radius: 20px;
+  background: #ede4f5;
+}
+.stress-scenario__result strong {
+  font-size: 22px;
+  overflow-wrap: anywhere;
+}
+.stress-scenario .stress-scenario__error {
+  color: #9c304b;
+}
+.stress-scenario input:focus-visible {
+  outline: 2px solid #44306c;
+  outline-offset: 2px;
+}

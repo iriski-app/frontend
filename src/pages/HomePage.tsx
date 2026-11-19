@@ -7,7 +7,8 @@ import RiskResult from '../components/risk/RiskResult'
 
 import { getInstrumentDetails } from '../api/instruments'
 import { calculateRisk } from '../api/riskCalculations'
-import { ApiError } from '../api/client'
+import { canCalculateInstrument } from '../utils/instrument'
+import { calculationError } from '../utils/calculationError'
 
 import type { Deal } from '../types/deal'
 import type { InstrumentDetails } from '../types/instrument'
@@ -129,7 +130,7 @@ function HomePage({ basketCount, onOpenBasket, onAdd }: HomePageProps) {
   async function handleCalculate(deal: Deal) {
     if (
       instrumentState.status !== 'success' ||
-      !instrumentState.details.ready_for_calculation ||
+      !canCalculateInstrument(instrumentState.details) ||
       calculationState.status === 'loading'
     ) {
       return
@@ -140,7 +141,7 @@ function HomePage({ basketCount, onOpenBasket, onAdd }: HomePageProps) {
     setCalculationState({ status: 'loading' })
 
     try {
-      const result = await calculateRisk([deal])
+      const result = await calculateRisk([deal], false)
 
       if (currentRequestId !== calculationRequestId.current) {
         return
@@ -156,33 +157,15 @@ function HomePage({ basketCount, onOpenBasket, onAdd }: HomePageProps) {
         return
       }
 
-      let message = 'Не удалось рассчитать риск. Попробуйте ещё раз'
-
-      if (error instanceof ApiError) {
-        switch (error.code) {
-          case 'missing_parameter':
-            message = 'Отсутствуют необходимые параметры для расчёта риска'
-            break
-
-          case 'missing_duration':
-            message = 'Отсутствует модифицированная дюрация облигации'
-            break
-
-          case 'calculation_data_not_found':
-            message = 'Не найдены рыночные данные для расчёта риска по сделке'
-            break
-        }
-      }
-
       setCalculationState({
         status: 'error',
-        message,
+        message: calculationError(error),
       })
     }
   }
 
   const isInstrumentReady =
-    instrumentState.status === 'success' && instrumentState.details.ready_for_calculation
+    instrumentState.status === 'success' && canCalculateInstrument(instrumentState.details)
 
   function handleAdd(deal: Deal) {
     if (instrumentState.status !== 'success') return
