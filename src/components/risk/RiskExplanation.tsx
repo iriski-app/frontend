@@ -25,6 +25,11 @@ function readSaved(calculationId: string): ExplanationState {
       value.text.trim() &&
       Array.isArray(value.sources) &&
       value.sources.every((source) => typeof source === 'string') &&
+      (value.calculationDetailsAvailable === undefined ||
+        typeof value.calculationDetailsAvailable === 'boolean') &&
+      (value.limitations === undefined ||
+        (Array.isArray(value.limitations) &&
+          value.limitations.every((item) => typeof item === 'string'))) &&
       (value.mode === 'verified' || value.mode === 'demo')
     ) {
       return { status: 'success', explanation: value }
@@ -47,6 +52,12 @@ function errorMessage(error: unknown): string {
     }
   }
   if (error instanceof ApiError) {
+    if (error.code === 'explanation_unverified') {
+      return 'Объяснение не прошло автоматическую проверку. Повторите запрос'
+    }
+    if (error.code === 'explanation_timeout') {
+      return 'Время ожидания объяснения истекло. Попробуйте ещё раз'
+    }
     if (error.code === 'calculation_not_found') {
       return 'Сохранённый расчёт не найден. Выполните расчёт заново'
     }
@@ -62,9 +73,50 @@ function errorMessage(error: unknown): string {
 interface RiskExplanationProps {
   calculationId: string
   totalDv01Rub: number | null
+  positionLabels?: Record<string, string>
 }
 
-function RiskExplanation({ calculationId, totalDv01Rub }: RiskExplanationProps) {
+function factLabel(source: string, positions: Record<string, string>): string {
+  if (source === 'total_rub') return 'Итоговый DV01 в рублях'
+  const match = /^position:([^:]+):(.+)$/.exec(source)
+  if (match) {
+    const labels: Record<string, string> = {
+      value_rub: 'DV01 в рублях',
+      side: 'Направление сделки',
+      quantity: 'Количество бумаг',
+      isin: 'ISIN бумаги',
+      change_rub: 'Изменение стоимости в рублях',
+      duration_mod: 'Модифицированная дюрация',
+      convexity: 'Выпуклость',
+      current_fair_value: 'Стоимость позиции',
+      fx_rate_to_rub: 'Курс к рублю',
+      side_sign: 'Знак направления сделки',
+      coupon_frequency: 'Частота купонных выплат',
+    }
+    return `${labels[match[2]] ?? 'Параметр расчёта'} · ${positions[match[1]] ?? 'позиция сделки'}`
+  }
+  const labels: Record<string, string> = {
+    as_of_date: 'Дата исходного расчёта',
+    currency: 'Валюта результата',
+    yield_shift_bp: 'Сдвиг доходности',
+    method: 'Метод расчёта',
+    'scenario:yield_shift_bp': 'Сдвиг доходности в базисных пунктах',
+    'scenario:yield_shift_fraction': 'Сдвиг доходности в долях единицы',
+    'scenario:yield_shift_percentage_points': 'Сдвиг доходности в процентных пунктах',
+    'method:bp_divisor': 'Количество базисных пунктов в единице доходности',
+    'method:convexity_coefficient': 'Коэффициент поправки на выпуклость',
+  }
+  return (
+    labels[source] ??
+    (source.includes('_') || source.includes(':') ? 'Факт сохранённого расчёта' : source)
+  )
+}
+
+function RiskExplanation({
+  calculationId,
+  totalDv01Rub,
+  positionLabels = {},
+}: RiskExplanationProps) {
   const [state, setState] = useState<ExplanationState>(() => readSaved(calculationId))
   const requestRun = useRef(0)
   const controller = useRef<AbortController | null>(null)
@@ -135,12 +187,22 @@ function RiskExplanation({ calculationId, totalDv01Rub }: RiskExplanationProps) 
               : 'Объяснение прошло автоматическую проверку'}
           </p>
           <p className="risk-explanation__text">{state.explanation.text}</p>
+          {state.explanation.calculationDetailsAvailable === false && (
+            <p>Объяснение итогов: подробный разбор формулы недоступен.</p>
+          )}
+          {!!state.explanation.limitations?.length && (
+            <ul>
+              {state.explanation.limitations.map((item, index) => (
+                <li key={index}>{item}</li>
+              ))}
+            </ul>
+          )}
           {state.explanation.sources.length > 0 && (
             <div className="risk-explanation__sources">
-              <span>Источники фактов:</span>
+              <span>Факты сохранённого расчёта:</span>
               <ul>
                 {state.explanation.sources.map((source, index) => (
-                  <li key={`${index}-${source}`}>{source}</li>
+                  <li key={`${index}-${source}`}>{factLabel(source, positionLabels)}</li>
                 ))}
               </ul>
             </div>

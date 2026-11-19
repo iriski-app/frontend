@@ -6,7 +6,10 @@ import { createLocalId } from '../utils/ids'
 
 const USE_MOCK_API = import.meta.env.VITE_USE_MOCK_API === 'true'
 
-export async function calculateRisk(deals: Deal[]): Promise<RiskCalculationResponse> {
+export async function calculateRisk(
+  deals: Deal[],
+  incomplete = false,
+): Promise<RiskCalculationResponse> {
   if (USE_MOCK_API) {
     const positions = deals.map((deal) => {
       const instrument = mockInstruments[deal.isin]
@@ -23,6 +26,15 @@ export async function calculateRisk(deals: Deal[]): Promise<RiskCalculationRespo
         side: deal.side,
         quantity: deal.quantity,
         market_value: marketValue,
+        currency: 'RUB',
+        price_currency: instrument.price_currency,
+        accrued_int_currency: instrument.accrued_int_currency,
+        price_fx_rate: 1,
+        accrued_int_fx_rate: 1,
+        price_fx_date: null,
+        accrued_int_fx_date: null,
+        price_fx_source: null,
+        accrued_int_fx_source: null,
         duration_mod: instrument.duration_mod,
         dv01,
         source: 'mock',
@@ -34,16 +46,22 @@ export async function calculateRisk(deals: Deal[]): Promise<RiskCalculationRespo
       status: 'success',
       as_of_date: new Date().toISOString(),
       total_dv01_rub: positions.reduce((sum, position) => sum + position.dv01, 0),
+      incomplete,
       positions,
     }
   }
 
   const request: RiskCalculationRequest = {
     positions: deals,
+    incomplete,
   }
 
-  return apiRequest<RiskCalculationResponse>('/risk-calculations', {
+  const response = await apiRequest<RiskCalculationResponse>('/risk-calculations', {
     method: 'POST',
     body: JSON.stringify(request),
   })
+  if (response.incomplete !== undefined && response.incomplete !== incomplete) {
+    throw new Error('Ответ расчёта не соответствует охвату позиций')
+  }
+  return response
 }

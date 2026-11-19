@@ -2,6 +2,9 @@ import { useEffect, useId, useRef, useState } from 'react'
 import type { SubmitEvent } from 'react'
 import Header from '../components/layout/Header'
 import RiskExplanation from '../components/risk/RiskExplanation'
+import CalculationDetails from '../components/risk/CalculationDetails'
+import { instrumentAmount, missingParameters } from '../utils/instrument'
+import { calculationError as formatCalculationError } from '../utils/calculationError'
 import { getInstrumentDetails } from '../api/instruments'
 import { calculateRisk } from '../api/riskCalculations'
 import type { BasketItem, BasketState } from '../types/basket'
@@ -42,8 +45,8 @@ function money(value: number): string {
 }
 
 function missingReason(item: BasketItem): string | null {
-  if (!item.instrument.ready_for_calculation) {
-    return `Недостаточно данных: ${item.instrument.missing_parameters.join(', ') || 'рыночные данные'}`
+  if (!isReady(item)) {
+    return `Расчёт недоступен: ${missingParameters(item.instrument)}`
   }
   return null
 }
@@ -216,9 +219,10 @@ function BasketCard({
         <div>
           <dt>Цена бумаги</dt>
           <dd>
-            {details.price_clean === null
-              ? 'Нет данных'
-              : `${money(details.price_clean)} ${details.currency ?? ''}`}
+            {instrumentAmount(
+              details.price_clean,
+              details.price_currency === undefined ? details.currency : details.price_currency,
+            )}
           </dd>
         </div>
         <div>
@@ -267,7 +271,14 @@ function BasketCard({
         </div>
         <div>
           <dt>Накопленный купонный доход</dt>
-          <dd>{details.accrued_int === null ? 'Нет данных' : money(details.accrued_int)}</dd>
+          <dd>
+            {instrumentAmount(
+              details.accrued_int,
+              details.accrued_int_currency === undefined
+                ? details.currency
+                : details.accrued_int_currency,
+            )}
+          </dd>
         </div>
         <div>
           <dt>Модифицированная дюрация</dt>
@@ -388,6 +399,13 @@ function BasketCard({
           </p>
         )}
       </div>
+      {details.calculation_status === 'estimate_possible' && !reason && (
+        <p className="basket-card__warning" role="status">
+          Возможен расчёт с оценкой ML. Недостающие метрики будут восстановлены моделью, если оценка
+          доступна.
+        </p>
+      )}
+      {!reason && item.positionResult && <CalculationDetails position={item.positionResult} />}
       {reason && (
         <p className="basket-card__warning" role="status">
           {reason}
@@ -574,7 +592,10 @@ function BasketPage({
       }
       const ids = readyItems.map((item) => item.id)
       stage = 'calculate'
-      const result = await calculateRisk(readyItems.map((item) => item.deal))
+      const result = await calculateRisk(
+        readyItems.map((item) => item.deal),
+        readyItems.length < current.items.length,
+      )
       if (run !== calculationRun.current) return
       if (!finishCalculation(current.version, ids, result)) {
         setCalculationError('Корзина изменилась во время расчёта. Запустите его ещё раз')
@@ -589,12 +610,12 @@ function BasketPage({
           })
         })
       }
-    } catch {
+    } catch (error) {
       if (run !== calculationRun.current) return
       setCalculationError(
         stage === 'refresh'
           ? 'Не удалось обновить данные всех бумаг. Расчёт не выполнен'
-          : 'Не удалось рассчитать риск. Повторите попытку',
+          : formatCalculationError(error),
       )
     } finally {
       if (run === calculationRun.current) setCalculating(false)
@@ -827,10 +848,19 @@ function BasketPage({
               aria-labelledby="basket-explanation-title"
             >
               <h2 id="basket-explanation-title">Объяснение результата</h2>
+              <p>
+                Объяснение относится к рассчитанным {state.total.included} из {state.total.total}{' '}
+                позиций.
+              </p>
               <RiskExplanation
                 key={state.total.calculationId}
                 calculationId={state.total.calculationId}
                 totalDv01Rub={state.total.value}
+                positionLabels={Object.fromEntries(
+                  state.items
+                    .filter((item) => item.positionResult)
+                    .map((item) => [item.positionResult!.id, item.deal.isin]),
+                )}
               />
             </section>
           )}

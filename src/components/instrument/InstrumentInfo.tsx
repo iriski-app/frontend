@@ -1,4 +1,5 @@
 import type { InstrumentDetails } from '../../types/instrument'
+import { canCalculateInstrument, instrumentAmount, missingParameters } from '../../utils/instrument'
 
 interface InstrumentInfoProps {
   details: InstrumentDetails
@@ -18,15 +19,29 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
     { label: 'Название', value: details.name },
     { label: 'Эмитент', value: details.issuer_name },
     { label: 'Тип инструмента', value: details.instrument_type },
-    { label: 'Валюта', value: details.currency },
+    { label: 'Валюта номинала', value: details.currency },
     { label: 'Номинал', value: details.face_value },
     { label: 'Тип купона', value: details.coupon_type },
     { label: 'Частота купона', value: details.coupon_freq },
     { label: 'Купонная ставка', value: details.coupon_rate },
     { label: 'Дата погашения', value: details.maturity_date },
     { label: 'Тип цены', value: details.price_type },
-    { label: 'Чистая цена', value: details.price_clean },
-    { label: 'Накопленный купонный доход', value: details.accrued_int },
+    {
+      label: 'Чистая цена',
+      value: instrumentAmount(
+        details.price_clean,
+        details.price_currency === undefined ? details.currency : details.price_currency,
+      ),
+    },
+    {
+      label: 'Накопленный купонный доход',
+      value: instrumentAmount(
+        details.accrued_int,
+        details.accrued_int_currency === undefined
+          ? details.currency
+          : details.accrued_int_currency,
+      ),
+    },
     { label: 'Модифицированная дюрация', value: details.duration_mod },
     { label: 'Выпуклость', value: details.convexity },
     { label: 'Доходность к погашению', value: details.ytm },
@@ -51,13 +66,17 @@ function InstrumentInfo({ details }: InstrumentInfoProps) {
         ))}
       </dl>
 
-      {!details.ready_for_calculation && (
+      {details.calculation_status === 'estimate_possible' && canCalculateInstrument(details) && (
+        <p className="instrument-info__notice" role="status">
+          Возможен расчёт с оценкой ML: недостающие дюрация или выпуклость будут восстановлены
+          моделью. Доступность оценки проверяется при расчёте.
+        </p>
+      )}
+      {!canCalculateInstrument(details) && (
         <div className="instrument-info__notice" role="status">
-          <p>Для расчёта риска недостаточно данных</p>
+          <p>Расчёт риска недоступен</p>
 
-          {details.missing_parameters.length > 0 && (
-            <p>Отсутствующие параметры: {details.missing_parameters.join(', ')}</p>
-          )}
+          {details.missing_parameters.length > 0 && <p>Причины: {missingParameters(details)}</p>}
         </div>
       )}
     </section>

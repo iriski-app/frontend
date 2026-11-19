@@ -5,6 +5,7 @@ import type { RiskCalculationResponse } from '../types/risk'
 import { isValidIsin } from './isin'
 import { isValidQuantity } from './quantity'
 import { createLocalId } from './ids'
+import { canCalculateInstrument } from './instrument'
 
 export const BASKET_STORAGE_KEY = 'iriski:basket:v1'
 
@@ -19,7 +20,7 @@ export function isDuplicate(items: BasketItem[], isin: string): boolean {
 }
 
 export function isReady(item: BasketItem): boolean {
-  return item.instrument.ready_for_calculation
+  return canCalculateInstrument(item.instrument)
 }
 
 export function addItem(

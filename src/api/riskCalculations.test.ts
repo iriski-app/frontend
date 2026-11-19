@@ -32,7 +32,7 @@ describe('calculateRisk', () => {
       expect.objectContaining({
         method: 'POST',
         credentials: 'include',
-        body: JSON.stringify({ positions: deals }),
+        body: JSON.stringify({ positions: deals, incomplete: false }),
       }),
     )
   })
