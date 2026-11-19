@@ -53,6 +53,10 @@ export default function StressScenario({ calculation }: { calculation: RiskCalcu
     setState({ status: 'idle' })
   }
 
+  function stepShift(delta: number) {
+    changeShift(String(Math.min(200, Math.max(-200, (valid ? Number(shift) : 0) + delta))))
+  }
+
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!valid || state.status === 'loading') return
@@ -85,7 +89,7 @@ export default function StressScenario({ calculation }: { calculation: RiskCalcu
               className="deal-form__stepper-button"
               aria-label="Уменьшить сдвиг доходности"
               disabled={valid && Number(shift) <= -200}
-              onClick={() => changeShift(String(Math.max(-200, (valid ? Number(shift) : 0) - 1)))}
+              onClick={() => stepShift(-1)}
             >
               −
             </button>
@@ -99,43 +103,27 @@ export default function StressScenario({ calculation }: { calculation: RiskCalcu
               aria-invalid={!valid}
               aria-describedby={`${id}-hint`}
               onChange={(event) => changeShift(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault()
+                  stepShift(event.key === 'ArrowUp' ? 1 : -1)
+                }
+              }}
             />
             <button
               type="button"
               className="deal-form__stepper-button"
               aria-label="Увеличить сдвиг доходности"
               disabled={valid && Number(shift) >= 200}
-              onClick={() => changeShift(String(Math.min(200, (valid ? Number(shift) : 0) + 1)))}
+              onClick={() => stepShift(1)}
             >
               +
             </button>
           </div>
         </div>
-        <label className="stress-scenario__range-label" htmlFor={`${id}-range`}>
-          Сдвиг доходности ползунком
-        </label>
-        <input
-          id={`${id}-range`}
-          className="stress-scenario__range"
-          type="range"
-          min={-200}
-          max={200}
-          step="any"
-          value={valid ? Number(shift) : 0}
-          onChange={(event) =>
-            changeShift(String(Math.round(Number(event.target.value) * 100) / 100))
-          }
-          aria-describedby={`${id}-hint`}
-          aria-valuetext={`${valid ? shift : 0} bp`}
-        />
-        <div className="stress-scenario__bounds" aria-hidden="true">
-          <span>−200 bp</span>
-          <span>0</span>
-          <span>+200 bp</span>
-        </div>
         <p id={`${id}-hint`}>
           {valid
-            ? 'Отрицательный сдвиг — снижение доходности, положительный — рост.'
+            ? 'Диапазон от −200 до +200 bp. Отрицательный сдвиг — снижение доходности, положительный — рост.'
             : 'Укажите число от −200 до +200 bp.'}
         </p>
         <button

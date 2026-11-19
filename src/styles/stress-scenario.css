@@ -17,23 +17,6 @@
   display: grid;
   gap: 12px;
 }
-.stress-scenario__range-label {
-  font-size: 12px;
-  margin-top: 6px;
-}
-.stress-scenario__range {
-  width: 100%;
-  margin: 0;
-  accent-color: #44306c;
-  cursor: pointer;
-  min-height: 30px;
-}
-.stress-scenario__bounds {
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: #675777;
-}
 .stress-scenario__result {
   margin-top: 18px;
   padding: 14px 18px;
